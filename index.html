@@ -1,2346 +1,1631 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marco Polo速查系统</title>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <title>Marco Polo速查</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     
-    <!-- Tailwind配置 -->
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        primary: '#B82601',
-                        success: '#10B981',
-                        warning: '#F59E0B',
-                        danger: '#EF4444',
+                        primary: '#2563eb',
+                        secondary: '#64748b',
+                        success: '#10b981',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
                     },
                 }
             }
         }
     </script>
     
-    <!-- 自定义工具类 -->
     <style type="text/tailwindcss">
         @layer utilities {
-            .content-auto { content-visibility: auto; }
-            .card-hover { @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1; }
-            .btn-primary { @apply bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 active:bg-primary/80 transition-all; }
-            .btn-secondary { @apply bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-all; }
-            .input-field { @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary; }
-            .tag-item { @apply inline-flex items-center px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700 mr-2 mb-2 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors; }
-            .tag-delete { @apply ml-1 text-gray-500 hover:text-danger cursor-pointer; }
+            .content-auto {
+                content-visibility: auto;
+            }
+            .transition-theme {
+                transition: background-color 0.3s, color 0.3s;
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+            }
+            .btn-primary {
+                @apply bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-all;
+            }
+            .btn-secondary {
+                @apply bg-secondary text-white px-4 py-2 rounded-lg hover:bg-secondary/90 transition-all;
+            }
+            .btn-danger {
+                @apply bg-danger text-white px-4 py-2 rounded-lg hover:bg-danger/90 transition-all;
+            }
+            .input-field {
+                @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all dark:bg-gray-700 dark:border-gray-600 dark:text-white;
+            }
+            .badge {
+                @apply px-2 py-1 rounded-full text-xs font-medium;
+            }
         }
     </style>
-    
-    <!-- 动画与基础样式 -->
-    <style>
-        .hidden { display: none !important; }
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        .slide-in { animation: slideIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .loader { border: 3px solid rgba(0,0,0,0.1); border-radius: 50%; border-top: 3px solid #B82601; width: 20px; height: 20px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .toast { transition: all 0.3s ease; transform: translateY(20px); opacity: 0; }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .modal-backdrop { backdrop-filter: blur(2px); background: rgba(0,0,0,0.1); }
-        .settings-section { border-bottom: 1px solid #e5e7eb; padding: 1rem 0; }
-        .settings-section:last-child { border-bottom: none; }
-        .search-highlight { background-color: rgba(255, 255, 0, 0.3); }
-        .upload-area { border: 2px dashed #ccc; border-radius: 6px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; }
-        .upload-area:hover { border-color: #B82601; background-color: rgba(184, 38, 1, 0.05); }
-        .image-preview { max-width: 100%; max-height: 200px; margin-top: 10px; border-radius: 4px; display: none; }
-    </style>
 </head>
-
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen font-sans">
-    <!-- 1. 登录页面 -->
-    <div id="login-page" class="fixed inset-0 flex items-center justify-center p-4 z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-8 slide-in">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fa fa-search text-primary text-2xl"></i>
+<body class="font-inter bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen transition-theme">
+    <!-- 登录页面 -->
+    <div id="login-page" class="flex items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-md">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-6 md:p-8">
+                <div class="text-center mb-8">
+                    <h1 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-primary mb-2">Marco Polo速查</h1>
+                    <p class="text-secondary dark:text-gray-400">产品管理系统</p>
                 </div>
-                <h2 class="text-2xl font-bold text-primary">Marco Polo速查</h2>
-                <p class="text-gray-500 dark:text-gray-400 mt-2">请登录系统</p>
-            </div>
-            
-            <!-- 用户类型选择 -->
-            <div class="flex border rounded-lg overflow-hidden mb-6">
-                <button id="login-user" class="flex-1 py-3 bg-primary text-white font-medium transition-colors">普通用户</button>
-                <button id="login-admin" class="flex-1 py-3 bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 font-medium transition-colors">管理员</button>
-            </div>
-            <input type="hidden" id="user-type" value="user">
-            
-            <!-- 密码输入 -->
-            <div class="mb-6">
-                <label for="password" class="block text-sm font-medium mb-2">密码</label>
-                <div class="relative">
-                    <input type="password" id="password" class="input-field pr-10" placeholder="请输入密码" autocomplete="off">
-                    <button id="toggle-pwd" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                        <i class="fa fa-eye-slash"></i>
+                
+                <!-- 身份切换 -->
+                <div class="flex mb-6 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                    <button id="user-tab" class="flex-1 py-2 px-4 text-center font-medium bg-primary text-white" onclick="switchAuth('user')">
+                        普通用户
+                    </button>
+                    <button id="admin-tab" class="flex-1 py-2 px-4 text-center font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all" onclick="switchAuth('admin')">
+                        管理员
                     </button>
                 </div>
-            </div>
-            
-            <!-- 登录按钮和错误提示 -->
-            <button id="login-btn" class="btn-primary w-full flex items-center justify-center">
-                <span>登录</span>
-                <i class="fa fa-arrow-right ml-2"></i>
-            </button>
-            <div id="login-error" class="text-danger text-sm text-center mt-3 hidden fade-in">
-                登录失败，请检查用户类型和密码
+                
+                <!-- 登录表单 -->
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <input type="hidden" id="auth-type" value="user">
+                    
+                    <div class="mb-4">
+                        <label for="username" class="block text-sm font-medium mb-1 dark:text-gray-300">用户名</label>
+                        <input type="text" id="username" class="input-field" placeholder="请输入用户名" required>
+                    </div>
+                    
+                    <div class="mb-6 relative">
+                        <label for="password" class="block text-sm font-medium mb-1 dark:text-gray-300">密码</label>
+                        <input type="password" id="password" class="input-field pr-10" placeholder="请输入密码" required>
+                        <button type="button" id="toggle-pwd" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors" onclick="togglePassword()">
+                            <i class="fa fa-eye-slash"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="login-error" class="mb-4 text-danger text-sm hidden">
+                        <i class="fa fa-exclamation-circle mr-1"></i> 用户名或密码错误
+                    </div>
+                    
+                    <button type="submit" class="btn-primary w-full">
+                        <i class="fa fa-sign-in mr-2"></i> 登录系统
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- 2. 主应用界面 -->
-    <div id="app" class="hidden">
-        <!-- 顶部导航 -->
-        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30">
-            <div class="container mx-auto px-4">
-                <div class="flex items-center justify-between h-16">
-                    <div class="flex items-center">
-                        <i class="fa fa-search text-primary text-xl mr-2"></i>
-                        <h1 class="text-lg font-bold">Marco Polo速查系统</h1>
-                    </div>
+    <!-- 主应用页面 (默认隐藏) -->
+    <div id="app-page" class="hidden flex flex-col min-h-screen">
+        <!-- 顶部导航栏 -->
+        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50 transition-theme">
+            <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-primary mr-4">Marco Polo速查</h1>
+                    <span id="user-role" class="badge bg-primary/10 text-primary dark:bg-primary/20">
+                        普通用户
+                    </span>
+                </div>
+                
+                <div class="flex items-center space-x-3 md:space-x-4">
+                    <!-- 主题切换 -->
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" onclick="toggleTheme()">
+                        <i class="fa fa-moon-o dark:hidden"></i>
+                        <i class="fa fa-sun-o hidden dark:inline-block"></i>
+                    </button>
                     
-                    <div class="flex items-center space-x-4">
-                        <span id="user-role" class="text-sm hidden md:inline">普通用户</span>
-                        <button id="settings-btn" class="p-2 hover:text-primary transition-colors" title="设置">
-                            <i class="fa fa-cog"></i>
-                        </button>
-                        <button id="theme-toggle" class="p-2 hover:text-primary transition-colors" title="切换主题">
-                            <i class="fa fa-moon-o"></i>
-                        </button>
-                        <button id="help-btn" class="p-2 hover:text-primary transition-colors" title="帮助">
-                            <i class="fa fa-question-circle"></i>
-                        </button>
-                        <button id="logout-btn" class="p-2 hover:text-primary transition-colors" title="退出登录">
-                            <i class="fa fa-sign-out"></i>
-                        </button>
-                    </div>
+                    <!-- 设置按钮（管理员专属） -->
+                    <button id="settings-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" onclick="openSettings()" style="display: none;">
+                        <i class="fa fa-cog"></i>
+                    </button>
+                    
+                    <!-- 帮助按钮 -->
+                    <button class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" onclick="openHelp()">
+                        <i class="fa fa-question-circle"></i>
+                    </button>
+                    
+                    <!-- 退出登录 -->
+                    <button class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-danger" onclick="confirmAction('确定要退出登录吗？', handleLogout)">
+                        <i class="fa fa-sign-out"></i>
+                    </button>
                 </div>
             </div>
         </header>
 
         <!-- 主内容区 -->
-        <main class="container mx-auto px-4 py-6">
-            <!-- 操作栏（优化后布局） -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 slide-in">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div class="w-full md:w-auto">
-                        <button id="add-product" class="btn-primary hidden">
-                            <i class="fa fa-plus mr-1"></i> 添加产品
-                        </button>
-                        <button id="export-data" class="btn-secondary ml-2">
-                            <i class="fa fa-download mr-1"></i> 导出数据
-                        </button>
-                        <button id="import-data" class="btn-secondary ml-2 hidden">
-                            <i class="fa fa-upload mr-1"></i> 导入数据
-                        </button>
-                    </div>
-                    <div class="w-full md:w-64 relative mt-2 md:mt-0">
-                        <!-- 优化搜索框内边距和高度，已删除搜索符号 -->
-                        <input type="text" id="search" placeholder="搜索产品名/编号..." 
-                               class="input-field pl-4 py-3 text-base" 
-                               style="padding-top: 0.75rem; padding-bottom: 0.75rem;">
-                    </div>
+        <main class="flex-1 container mx-auto px-4 py-6">
+            <!-- 操作栏 (仅管理员可见) -->
+            <div id="action-bar" class="mb-6 flex flex-wrap items-center justify-between gap-4" style="display: none;">
+                <div class="flex flex-wrap gap-2">
+                    <button class="btn-primary" onclick="openProductModal()">
+                        <i class="fa fa-plus mr-1"></i> 添加产品
+                    </button>
+                    <button class="btn-secondary" onclick="importData()">
+                        <i class="fa fa-upload mr-1"></i> 导入数据
+                    </button>
+                    <button class="btn-secondary" onclick="exportData()">
+                        <i class="fa fa-download mr-1"></i> 导出数据
+                    </button>
+                </div>
+                
+                <!-- 视图切换 -->
+                <div class="flex border rounded-lg overflow-hidden">
+                    <button id="grid-view" class="px-3 py-1 bg-primary text-white" onclick="switchView('grid')">
+                        <i class="fa fa-th-large"></i>
+                    </button>
+                    <button id="list-view" class="px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" onclick="switchView('list')">
+                        <i class="fa fa-list"></i>
+                    </button>
                 </div>
             </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <!-- 左侧筛选与统计 -->
-                <div class="lg:col-span-1 space-y-6">
-                    <!-- 筛选条件 -->
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 slide-in">
-                        <h3 class="font-bold mb-4 pb-2 border-b">筛选条件</h3>
-                        
-                        <div class="space-y-6">
-                            <!-- 产品系列（可编辑） -->
-                            <div>
-                                <label class="block text-sm mb-2">产品系列</label>
-                                <div class="space-y-2">
-                                    <div class="flex gap-2">
-                                        <input type="text" id="series-input" class="input-field" placeholder="输入系列名称">
-                                        <button id="add-series" class="btn-primary whitespace-nowrap">
-                                            <i class="fa fa-plus"></i>
-                                        </button>
-                                    </div>
-                                    <div id="series-tags" class="flex flex-wrap">
-                                        <!-- 系列标签将动态生成 -->
-                                    </div>
-                                    <input type="hidden" id="selected-series" value="">
-                                </div>
+
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- 左侧筛选区 -->
+                <div id="filter-panel" class="lg:w-1/4 bg-white dark:bg-gray-800 rounded-xl shadow p-4 transition-theme">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center justify-between">
+                        <span>筛选条件</span>
+                        <button class="text-sm text-secondary hover:text-primary transition-colors" onclick="resetFilters()">
+                            重置
+                        </button>
+                    </h2>
+                    
+                    <!-- 产品系列筛选 -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 dark:text-gray-300">产品系列</label>
+                        <div class="relative">
+                            <select id="series-filter" class="input-field appearance-none pr-8">
+                                <option value="">全部系列</option>
+                            </select>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                                <i class="fa fa-chevron-down text-xs"></i>
                             </div>
-                            
-                            <!-- 尺寸规格（可编辑） -->
-                            <div>
-                                <label class="block text-sm mb-2">尺寸规格</label>
-                                <div class="space-y-2">
-                                    <div class="flex gap-2">
-                                        <input type="text" id="size-input" class="input-field" placeholder="输入尺寸（如S、XL）">
-                                        <button id="add-size" class="btn-primary whitespace-nowrap">
-                                            <i class="fa fa-plus"></i>
-                                        </button>
-                                    </div>
-                                    <div id="size-tags" class="flex flex-wrap">
-                                        <!-- 尺寸标签将动态生成 -->
-                                    </div>
-                                    <input type="hidden" id="selected-size" value="">
-                                </div>
-                            </div>
-                            
-                            <!-- 价格范围 -->
-                            <div>
-                                <label class="block text-sm mb-1">价格范围</label>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <input type="number" id="price-min" placeholder="最低" class="input-field" min="0">
-                                    <input type="number" id="price-max" placeholder="最高" class="input-field" min="0">
-                                </div>
-                            </div>
-                            
-                            <!-- 状态筛选 -->
-                            <div>
-                                <label class="block text-sm mb-1">状态</label>
-                                <div class="space-y-2">
-                                    <label class="inline-flex items-center">
-                                        <input type="checkbox" checked id="status-active" class="text-primary">
-                                        <span class="ml-2 text-sm">在售</span>
-                                    </label>
-                                    <label class="inline-flex items-center">
-                                        <input type="checkbox" id="status-discontinued" class="text-primary">
-                                        <span class="ml-2 text-sm">已停产</span>
-                                    </label>
-                                    <label class="inline-flex items-center">
-                                        <input type="checkbox" id="status-hot" class="text-primary">
-                                        <span class="ml-2 text-sm">爆款</span>
-                                    </label>
-                                    <label class="inline-flex items-center">
-                                        <input type="checkbox" id="status-discount" class="text-primary">
-                                        <span class="ml-2 text-sm">特价</span>
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <button id="apply-filter" class="btn-primary w-full flex items-center justify-center">
-                                <span>应用筛选</span>
-                                <div class="loader ml-2 hidden"></div>
+                        </div>
+                        <div class="flex items-center mt-2" id="series-add-container" style="display: none;">
+                            <input type="text" id="new-series" class="input-field text-sm w-full mr-2" placeholder="添加新系列">
+                            <button class="btn-primary px-2 py-1 text-sm" onclick="addCustomOption('series')">
+                                <i class="fa fa-plus"></i>
                             </button>
-                            <button id="reset-filter" class="text-gray-500 text-sm w-full text-center hover:text-primary transition-colors">重置筛选</button>
                         </div>
                     </div>
                     
-                    <!-- 数据统计 -->
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 slide-in">
-                        <h3 class="font-bold mb-4 pb-2 border-b">数据统计</h3>
-                        
-                        <div class="space-y-3 mb-4">
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">产品总数</span>
-                                <span class="font-bold" id="total-products">0</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">在售产品</span>
-                                <span class="font-bold text-success" id="active-products">0</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">已停产</span>
-                                <span class="font-bold text-gray-500" id="discontinued-products">0</span>
+                    <!-- 尺寸规格筛选 -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 dark:text-gray-300">尺寸规格</label>
+                        <div class="relative">
+                            <select id="size-filter" class="input-field appearance-none pr-8">
+                                <option value="">全部尺寸</option>
+                            </select>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                                <i class="fa fa-chevron-down text-xs"></i>
                             </div>
                         </div>
-                        
-                        <!-- 统计图表 -->
-                        <div class="h-48">
-                            <canvas id="stats-chart"></canvas>
+                        <div class="flex items-center mt-2" id="size-add-container" style="display: none;">
+                            <input type="text" id="new-size" class="input-field text-sm w-full mr-2" placeholder="添加新尺寸">
+                            <button class="btn-primary px-2 py-1 text-sm" onclick="addCustomOption('size')">
+                                <i class="fa fa-plus"></i>
+                            </button>
                         </div>
                     </div>
+                    
+                    <!-- 价格范围筛选 -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 dark:text-gray-300">价格范围</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="min-price" class="input-field text-sm" placeholder="最低">
+                            <span class="self-center">-</span>
+                            <input type="number" id="max-price" class="input-field text-sm" placeholder="最高">
+                        </div>
+                    </div>
+                    
+                    <!-- 产品状态筛选 -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 dark:text-gray-300">产品状态</label>
+                        <div class="flex flex-wrap gap-2">
+                            <label class="flex items-center space-x-1 cursor-pointer">
+                                <input type="checkbox" value="onsale" class="form-checkbox h-4 w-4 text-primary rounded" checked>
+                                <span>在售</span>
+                            </label>
+                            <label class="flex items-center space-x-1 cursor-pointer">
+                                <input type="checkbox" value="discontinued" class="form-checkbox h-4 w-4 text-primary rounded" checked>
+                                <span>已停产</span>
+                            </label>
+                            <label class="flex items-center space-x-1 cursor-pointer">
+                                <input type="checkbox" value="hot" class="form-checkbox h-4 w-4 text-primary rounded" checked>
+                                <span>爆款</span>
+                            </label>
+                            <label class="flex items-center space-x-1 cursor-pointer">
+                                <input type="checkbox" value="discount" class="form-checkbox h-4 w-4 text-primary rounded" checked>
+                                <span>特价</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 筛选按钮 -->
+                    <button class="btn-primary w-full" onclick="applyFilters()">
+                        <i class="fa fa-filter mr-1"></i> 应用筛选
+                    </button>
                 </div>
-                
-                <!-- 右侧产品列表 -->
-                <div class="lg:col-span-3">
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 slide-in">
-                        <!-- 优化后的排序和视图控制区域 -->
-                        <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
-                            <h3 class="font-bold">产品列表</h3>
-                            <div class="flex items-center space-x-3 w-full sm:w-auto justify-end">
-                                <span class="text-sm">排序:</span>
-                                <select id="sort-by" class="input-field text-sm px-2 py-1">
-                                    <option value="newest">最新添加</option>
-                                    <option value="price-asc">价格从低到高</option>
-                                    <option value="price-desc">价格从高到低</option>
-                                </select>
-                                
-                                <div class="flex border rounded-md overflow-hidden">
-                                    <button id="view-grid" class="p-2 bg-primary text-white" title="网格视图">
-                                        <i class="fa fa-th-large"></i>
-                                    </button>
-                                    <button id="view-list" class="p-2 bg-gray-100 dark:bg-gray-700" title="列表视图">
-                                        <i class="fa fa-list"></i>
-                                    </button>
-                                </div>
+
+                <!-- 右侧内容区 (统计 + 产品列表) -->
+                <div class="lg:w-3/4 flex flex-col gap-6">
+                    <!-- 数据统计区 -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 transition-theme">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                                <p class="text-sm text-secondary dark:text-gray-400 mb-1">产品总数</p>
+                                <p id="total-products" class="text-xl font-bold text-primary">0</p>
+                            </div>
+                            <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 text-center">
+                                <p class="text-sm text-secondary dark:text-gray-400 mb-1">在售产品</p>
+                                <p id="onsale-products" class="text-xl font-bold text-success">0</p>
+                            </div>
+                            <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
+                                <p class="text-sm text-secondary dark:text-gray-400 mb-1">已停产产品</p>
+                                <p id="discontinued-products" class="text-xl font-bold text-danger">0</p>
+                            </div>
+                            <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 text-center">
+                                <p class="text-sm text-secondary dark:text-gray-400 mb-1">爆款产品</p>
+                                <p id="hot-products" class="text-xl font-bold text-warning">0</p>
                             </div>
                         </div>
                         
-                        <div id="products-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <!-- 产品卡片动态生成 -->
+                        <!-- 产品系列分布图表 -->
+                        <div class="h-64">
+                            <canvas id="series-chart"></canvas>
                         </div>
-                        
-                        <div id="no-products" class="py-10 text-center hidden">
-                            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fa fa-box text-gray-400 text-2xl"></i>
-                            </div>
-                            <p class="text-gray-500">没有找到符合条件的产品</p>
+                    </div>
+
+                    <!-- 排序栏 -->
+                    <div class="flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl shadow p-4 transition-theme">
+                        <h2 class="text-lg font-semibold">产品列表</h2>
+                        <div class="flex items-center">
+                            <label class="text-sm mr-2 dark:text-gray-300">排序:</label>
+                            <select id="sort-by" class="input-field text-sm w-auto" onchange="sortProducts()">
+                                <option value="newest">最新添加</option>
+                                <option value="price-asc">价格从低到高</option>
+                                <option value="price-desc">价格从高到低</option>
+                            </select>
                         </div>
-                        
-                        <!-- 分页 -->
-                        <div class="mt-6 flex justify-center" id="pagination">
-                            <nav class="inline-flex rounded-md shadow-sm">
-                                <button id="prev-page" class="px-3 py-2 rounded-l-md border bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                                    <i class="fa fa-chevron-left text-xs"></i>
-                                </button>
-                                <div id="page-numbers" class="flex">
-                                    <button class="px-4 py-2 border bg-primary text-white">1</button>
-                                </div>
-                                <button id="next-page" class="px-3 py-2 rounded-r-md border bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50">
-                                    <i class="fa fa-chevron-right text-xs"></i>
-                                </button>
-                            </nav>
+                    </div>
+
+                    <!-- 产品列表区 -->
+                    <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="col-span-full text-center py-10 text-secondary dark:text-gray-400">
+                            <i class="fa fa-folder-open-o text-4xl mb-2"></i>
+                            <p>暂无产品数据</p>
+                            <p id="empty-hint" class="text-sm mt-1 hidden">请添加产品或导入数据</p>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
-        
-        <!-- 返回顶部按钮 -->
-        <button id="back-to-top" class="fixed bottom-6 right-6 bg-primary text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg opacity-0 invisible transition-all z-20">
-            <i class="fa fa-chevron-up"></i>
-        </button>
+
+        <!-- 页脚 -->
+        <footer class="bg-white dark:bg-gray-800 py-4 mt-auto transition-theme">
+            <div class="container mx-auto px-4 text-center text-sm text-secondary dark:text-gray-400">
+                <p>Marco Polo速查 © 2025 产品管理系统</p>
+            </div>
+        </footer>
     </div>
 
-    <!-- 3. 产品编辑模态框 -->
-    <div id="product-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 slide-in">
-            <h3 id="modal-title" class="text-xl font-bold mb-4">添加产品</h3>
-            
-            <form id="product-form">
+    <!-- 产品编辑模态框 (仅管理员可见) -->
+    <div id="product-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto transition-theme">
+            <div class="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+                <h2 id="modal-title" class="text-lg font-bold">添加产品</h2>
+                <button class="text-gray-500 hover:text-danger transition-colors" onclick="closeProductModal()">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <form id="product-form" onsubmit="saveProduct(event)" class="p-4">
                 <input type="hidden" id="product-id">
                 
-                <div class="mb-4">
-                    <label for="product-name" class="block text-sm mb-1">产品名称 *</label>
-                    <input type="text" id="product-name" class="input-field" required>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="product-name" class="block text-sm font-medium mb-1 dark:text-gray-300">
+                            产品名称 <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" id="product-name" class="input-field" required>
+                    </div>
+                    <div>
+                        <label for="product-series" class="block text-sm font-medium mb-1 dark:text-gray-300">
+                            产品系列 <span class="text-danger">*</span>
+                        </label>
+                        <select id="product-series" class="input-field" required>
+                            <option value="">选择系列</option>
+                        </select>
+                    </div>
                 </div>
                 
-                <div class="mb-4">
-                    <label for="product-series" class="block text-sm mb-1">产品系列 *</label>
-                    <input type="text" id="product-series" class="input-field" required placeholder="输入产品系列">
-                    <div id="product-series-suggestions" class="mt-1 text-sm text-gray-500">
-                        <!-- 系列建议将动态生成 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="product-size" class="block text-sm font-medium mb-1 dark:text-gray-300">
+                            尺寸规格 <span class="text-danger">*</span>
+                        </label>
+                        <select id="product-size" class="input-field" required>
+                            <option value="">选择尺寸</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="product-price" class="block text-sm font-medium mb-1 dark:text-gray-300">
+                            产品价格 <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" id="product-price" class="input-field" min="0" step="0.01" required>
                     </div>
                 </div>
                 
                 <div class="mb-4">
-                    <label for="product-size" class="block text-sm mb-1">尺寸规格</label>
-                    <input type="text" id="product-size" class="input-field" placeholder="输入尺寸规格">
-                    <div id="product-size-suggestions" class="mt-1 text-sm text-gray-500">
-                        <!-- 尺寸建议将动态生成 -->
-                    </div>
-                </div>
-                
-                <div class="mb-4">
-                    <label for="product-price" class="block text-sm mb-1">价格 (元) *</label>
-                    <input type="number" id="product-price" class="input-field" min="0" step="0.01" required>
-                </div>
-                
-                <div class="mb-4">
-                    <label for="product-status" class="block text-sm mb-1">状态 *</label>
+                    <label for="product-status" class="block text-sm font-medium mb-1 dark:text-gray-300">
+                        产品状态 <span class="text-danger">*</span>
+                    </label>
                     <select id="product-status" class="input-field" required>
-                        <option value="active">在售</option>
+                        <option value="onsale">在售</option>
                         <option value="discontinued">已停产</option>
                         <option value="hot">爆款</option>
                         <option value="discount">特价</option>
                     </select>
                 </div>
                 
-                <!-- 产品图片上传区域 -->
-                <div class="mb-4">
-                    <label class="block text-sm mb-1">产品图片</label>
-                    <div class="upload-area mb-3" id="image-upload-area">
-                        <i class="fa fa-cloud-upload text-3xl text-gray-400 mb-2"></i>
-                        <p class="text-sm">点击或拖拽图片至此处上传</p>
-                        <p class="text-xs text-gray-500 mt-1">支持JPG、PNG格式，最大5MB</p>
-                    </div>
-                    
-                    <div class="flex gap-2 mb-3">
-                        <button type="button" id="upload-local" class="btn-secondary flex-1">
-                            <i class="fa fa-file-image-o mr-1"></i> 本地上传
-                        </button>
-                        <button type="button" id="upload-camera" class="btn-secondary flex-1">
-                            <i class="fa fa-camera mr-1"></i> 拍照上传
-                        </button>
-                    </div>
-                    
-                    <input type="hidden" id="product-image" value="">
-                    <img id="image-preview" class="image-preview" alt="预览图">
-                    <input type="file" id="image-file-input" accept="image/*" class="hidden">
-                    <video id="camera-preview" class="hidden w-full max-h-64 mb-2" autoplay></video>
-                    <div id="camera-controls" class="hidden mb-3">
-                        <button type="button" id="take-photo" class="btn-primary mr-2">
-                            <i class="fa fa-camera mr-1"></i> 拍照
-                        </button>
-                        <button type="button" id="cancel-camera" class="btn-secondary">
-                            <i class="fa fa-times mr-1"></i> 取消
-                        </button>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-2 dark:text-gray-300">产品图片</label>
+                    <div class="flex items-center gap-4">
+                        <div id="preview-container" class="w-24 h-24 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-700">
+                            <img id="image-preview" src="https://picsum.photos/200/200?random=1" alt="预览图" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="btn-secondary cursor-pointer text-center">
+                                <i class="fa fa-upload mr-1"></i> 本地上传
+                                <input type="file" id="image-upload" class="hidden" accept="image/*">
+                            </label>
+                            <button type="button" class="btn-secondary" onclick="takePhoto()">
+                                <i class="fa fa-camera mr-1"></i> 拍照上传
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" id="cancel-modal" class="btn-secondary">取消</button>
-                    <button type="submit" class="btn-primary">保存</button>
+                <div class="flex justify-end gap-3">
+                    <button type="button" class="btn-secondary" onclick="closeProductModal()">取消</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fa fa-save mr-1"></i> 保存产品
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 4. 帮助对话框 -->
-    <div id="help-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 slide-in">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold">使用帮助</h3>
-                <button id="close-help" class="text-gray-500 hover:text-gray-700">
+    <!-- 设置模态框 (仅管理员可见) -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto transition-theme">
+            <div class="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+                <h2 class="text-lg font-bold">系统设置</h2>
+                <button class="text-gray-500 hover:text-danger transition-colors" onclick="closeSettings()">
                     <i class="fa fa-times"></i>
                 </button>
             </div>
-            
-            <div class="space-y-4 text-sm">
-                <div>
-                    <h4 class="font-medium mb-2">产品管理</h4>
-                    <p>管理员可以添加、编辑和删除产品，普通用户只能查看</p>
+            <div class="p-4">
+                <!-- 主题设置 -->
+                <div class="mb-6">
+                    <h3 class="text-md font-semibold mb-3">主题设置</h3>
+                    <div class="flex items-center space-x-4">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="theme" value="light" class="form-radio h-4 w-4 text-primary" checked>
+                            <span>浅色模式</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="radio" name="theme" value="dark" class="form-radio h-4 w-4 text-primary">
+                            <span>深色模式</span>
+                        </label>
+                    </div>
                 </div>
                 
-                <div>
-                    <h4 class="font-medium mb-2">筛选搜索</h4>
-                    <p>产品系列和尺寸规格支持自定义添加，输入名称后点击"+"按钮添加</p>
-                    <p>点击标签可选择筛选条件，再次点击可取消选择</p>
-                </div>
-                
-                <div>
-                    <h4 class="font-medium mb-2">数据导出</h4>
-                    <p>点击"导出数据"可将产品信息保存为JSON文件</p>
-                </div>
-            </div>
-            
-            <div class="mt-6">
-                <button id="close-help-btn" class="btn-primary w-full">我知道了</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 5. 确认对话框 -->
-    <div id="confirm-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 slide-in">
-            <div class="text-center mb-4">
-                <div class="w-12 h-12 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <i class="fa fa-exclamation-triangle text-warning"></i>
-                </div>
-                <h3 id="confirm-title" class="font-bold text-lg">确认操作</h3>
-                <p id="confirm-message" class="text-gray-500 mt-2">您确定要执行此操作吗？</p>
-            </div>
-            
-            <div class="flex space-x-3">
-                <button id="confirm-cancel" class="btn-secondary flex-1">取消</button>
-                <button id="confirm-ok" class="btn-primary flex-1">确认</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 6. 提示消息 -->
-    <div id="toast" class="toast fixed bottom-6 right-6 bg-gray-800 text-white px-4 py-2 rounded-md flex items-center z-50">
-        <i id="toast-icon" class="fa fa-check mr-2"></i>
-        <span id="toast-text">操作成功</span>
-    </div>
-
-    <!-- 7. 设置界面 -->
-    <div id="settings-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 slide-in">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold">系统设置</h3>
-                <button id="close-settings" class="text-gray-500 hover:text-gray-700">
-                    <i class="fa fa-times"></i>
-                </button>
-            </div>
-            
-            <!-- 主题设置 -->
-            <div class="settings-section">
-                <h4 class="font-medium mb-3">主题设置</h4>
-                <div class="space-y-3">
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="theme" value="light" class="text-primary" id="theme-light">
-                        <span class="ml-2">浅色模式</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="theme" value="dark" class="text-primary" id="theme-dark">
-                        <span class="ml-2">深色模式</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="theme" value="auto" class="text-primary" id="theme-auto">
-                        <span class="ml-2">跟随系统</span>
-                    </label>
-                </div>
-            </div>
-            
-            <!-- 用户管理（仅管理员可见） -->
-            <div class="settings-section" id="user-management">
-                <h4 class="font-medium mb-3">用户管理</h4>
-                <div class="space-y-4">
-                    <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                        <div class="flex justify-between items-center">
+                <!-- 用户密码管理 -->
+                <div id="user-management" class="mb-6">
+                    <h3 class="text-md font-semibold mb-3">用户密码管理</h3>
+                    
+                    <!-- 普通用户密码修改 -->
+                    <div class="mb-5 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <h4 class="font-medium mb-2">普通用户密码修改</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <div class="font-medium">普通用户</div>
-                                <div class="text-sm text-gray-500 dark:text-gray-400">基础查询权限</div>
+                                <label for="user-password" class="block text-sm font-medium mb-1 dark:text-gray-300">新密码</label>
+                                <div class="relative">
+                                    <input type="password" id="user-password" class="input-field pr-10" placeholder="请输入新密码">
+                                    <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors" onclick="togglePassword('user-password')">
+                                        <i class="fa fa-eye-slash"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <button id="edit-user-password" class="text-sm text-primary hover:text-primary/80">
-                                修改密码
-                            </button>
+                            <div>
+                                <label for="user-password-confirm" class="block text-sm font-medium mb-1 dark:text-gray-300">确认密码</label>
+                                <div class="relative">
+                                    <input type="password" id="user-password-confirm" class="input-field pr-10" placeholder="请再次输入新密码">
+                                    <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors" onclick="togglePassword('user-password-confirm')">
+                                        <i class="fa fa-eye-slash"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
+                        <p id="user-password-hint" class="text-xs text-secondary mt-1 hidden">
+                            <i class="fa fa-info-circle mr-1"></i> 密码修改后将立即生效
+                        </p>
                     </div>
                     
-                    <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                        <div class="flex justify-between items-center">
+                    <!-- 管理员密码修改 -->
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <h4 class="font-medium mb-2">管理员密码修改</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <div class="font-medium">管理员</div>
-                                <div class="text-sm text-gray-500 dark:text-gray-400">全部管理权限</div>
+                                <label for="admin-password" class="block text-sm font-medium mb-1 dark:text-gray-300">新密码</label>
+                                <div class="relative">
+                                    <input type="password" id="admin-password" class="input-field pr-10" placeholder="请输入新密码">
+                                    <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors" onclick="togglePassword('admin-password')">
+                                        <i class="fa fa-eye-slash"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <button id="edit-admin-password" class="text-sm text-primary hover:text-primary/80">
-                                修改密码
-                            </button>
+                            <div>
+                                <label for="admin-password-confirm" class="block text-sm font-medium mb-1 dark:text-gray-300">确认密码</label>
+                                <div class="relative">
+                                    <input type="password" id="admin-password-confirm" class="input-field pr-10" placeholder="请再次输入新密码">
+                                    <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors" onclick="togglePassword('admin-password-confirm')">
+                                        <i class="fa fa-eye-slash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="admin-password-hint" class="text-xs text-secondary mt-1 hidden">
+                            <i class="fa fa-exclamation-circle mr-1"></i> 请妥善保管管理员密码！
+                        </p>
+                    </div>
+                    
+                    <!-- 保存密码按钮 -->
+                    <button class="btn-primary mt-3" onclick="savePasswords()">
+                        <i class="fa fa-save mr-1"></i> 保存密码修改
+                    </button>
+                </div>
+                
+                <!-- 自定义选项管理 -->
+                <div id="custom-options" class="mb-6">
+                    <h3 class="text-md font-semibold mb-3">自定义选项管理</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 dark:text-gray-300">产品系列</label>
+                            <div id="series-list" class="max-h-32 overflow-y-auto space-y-1 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 dark:text-gray-300">尺寸规格</label>
+                            <div id="size-list" class="max-h-32 overflow-y-auto space-y-1 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn-danger mt-3" onclick="confirmAction('确定要重置所有自定义选项吗？', resetCustomOptions)">
+                        <i class="fa fa-refresh mr-1"></i> 重置为默认值
+                    </button>
+                </div>
+                
+                <!-- 数据管理 -->
+                <div id="data-management" class="mb-6">
+                    <h3 class="text-md font-semibold mb-3">数据管理</h3>
+                    <div class="space-y-3">
+                        <button class="btn-danger w-full" onclick="confirmAction('确定要清除所有产品数据吗？', clearAllData)">
+                            <i class="fa fa-trash mr-1"></i> 清除产品数据
+                        </button>
+                        <button class="btn-secondary w-full" onclick="importDemoData()">
+                            <i class="fa fa-download mr-1"></i> 导入演示数据
+                        </button>
+                        <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-secondary">
+                            <p>系统版本: v1.0.0</p>
+                            <p>最后更新: 2025-01-01</p>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- 自定义选项管理 -->
-            <div class="settings-section">
-                <h4 class="font-medium mb-3">自定义选项管理</h4>
-                <div class="space-y-4">
-                    <div>
-                        <h5 class="text-sm font-medium mb-2">产品系列管理</h5>
-                        <div id="manage-series" class="flex flex-wrap">
-                            <!-- 系列管理标签将动态生成 -->
-                        </div>
-                    </div>
-                    <div>
-                        <h5 class="text-sm font-medium mb-2">尺寸规格管理</h5>
-                        <div id="manage-sizes" class="flex flex-wrap">
-                            <!-- 尺寸管理标签将动态生成 -->
-                        </div>
-                    </div>
-                    <button id="clear-custom-options" class="text-sm text-danger hover:text-danger/80">
-                        <i class="fa fa-trash mr-1"></i> 清除所有自定义选项
-                    </button>
-                </div>
-            </div>
-            
-            <!-- 数据管理 -->
-            <div class="settings-section">
-                <h4 class="font-medium mb-3">数据管理</h4>
-                <div class="space-y-3">
-                    <button id="clear-data" class="w-full text-left px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                        <i class="fa fa-trash text-danger mr-2"></i> 清除产品数据
-                    </button>
-                    <button id="import-demo" class="w-full text-left px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                        <i class="fa fa-download text-success mr-2"></i> 导入演示数据
-                    </button>
-                </div>
-            </div>
-            
-            <!-- 关于 -->
-            <div class="settings-section">
-                <h4 class="font-medium mb-3">关于系统</h4>
-                <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-                    <p>Marco Polo速查系统 v1.1</p>
-                    <p>支持自定义筛选选项的产品信息管理工具</p>
-                </div>
-            </div>
-            
-            <div class="mt-6">
-                <button id="close-settings-btn" class="btn-secondary w-full">关闭设置</button>
             </div>
         </div>
     </div>
 
-    <!-- 8. 数据导入模态框 -->
-    <div id="import-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 slide-in">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold">导入数据</h3>
-                <button id="close-import" class="text-gray-500 hover:text-gray-700">
+    <!-- 帮助模态框 -->
+    <div id="help-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto transition-theme">
+            <div class="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+                <h2 class="text-lg font-bold">使用帮助</h2>
+                <button class="text-gray-500 hover:text-danger transition-colors" onclick="closeHelp()">
                     <i class="fa fa-times"></i>
                 </button>
             </div>
-            
-            <div class="space-y-4">
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                    请选择JSON格式的数据文件导入。导入将覆盖现有数据。
-                </p>
-                
-                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md p-4 text-center">
-                    <input type="file" id="import-file" accept=".json" class="hidden">
-                    <label for="import-file" class="cursor-pointer">
-                        <i class="fa fa-file-text-o text-3xl text-gray-400 mb-2"></i>
-                        <p class="text-sm">点击上传JSON文件</p>
-                        <p class="text-xs text-gray-500 mt-1">或拖放文件到此处</p>
-                    </label>
+            <div class="p-4">
+                <div id="user-help" class="mb-4">
+                    <h3 class="text-md font-semibold mb-2">普通用户功能</h3>
+                    <ul class="list-disc pl-5 space-y-1 text-sm">
+                        <li>查看产品列表及产品详情</li>
+                        <li>使用筛选功能查找特定产品</li>
+                        <li>切换产品列表视图（网格/列表）</li>
+                        <li>按不同条件排序产品</li>
+                        <li>切换系统主题（浅色/深色）</li>
+                    </ul>
                 </div>
                 
-                <div id="import-file-name" class="text-sm hidden"></div>
-            </div>
-            
-            <div class="flex justify-end space-x-3 mt-6">
-                <button id="cancel-import" class="btn-secondary">取消</button>
-                <button id="confirm-import" class="btn-primary" disabled>确认导入</button>
+                <div id="admin-help" class="mb-4 hidden">
+                    <h3 class="text-md font-semibold mb-2">管理员额外功能</h3>
+                    <ul class="list-disc pl-5 space-y-1 text-sm">
+                        <li>添加、编辑、删除产品信息</li>
+                        <li>导入/导出产品数据</li>
+                        <li>管理产品系列和尺寸规格</li>
+                        <li>修改用户密码</li>
+                        <li>清除数据或导入演示数据</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 9. 修改用户密码模态框 -->
-    <div id="change-password-modal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 slide-in">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="change-password-title" class="text-xl font-bold">修改管理员密码</h3>
-                <button id="close-change-password" class="text-gray-500 hover:text-gray-700">
-                    <i class="fa fa-times"></i>
-                </button>
+    <!-- 确认对话框 -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md transition-theme">
+            <div class="p-4 border-b dark:border-gray-700">
+                <h2 class="text-lg font-bold">确认操作</h2>
             </div>
-            
-            <form id="change-password-form">
-                <input type="hidden" id="target-user-type" value="">
-                
-                <div class="mb-4">
-                    <label for="new-user-password" class="block text-sm mb-1">新密码 *</label>
-                    <input type="password" id="new-user-password" class="input-field" minlength="6" required>
-                    <p class="text-xs text-gray-500 mt-1">密码长度至少6位</p>
+            <div class="p-6">
+                <p id="confirm-message" class="mb-6">您确定要执行此操作吗？</p>
+                <div class="flex justify-end gap-3">
+                    <button class="btn-secondary" onclick="closeConfirm()">取消</button>
+                    <button id="confirm-btn" class="btn-danger" onclick="executeConfirmAction()">确认</button>
                 </div>
-                
-                <div class="mb-4">
-                    <label for="confirm-user-password" class="block text-sm mb-1">确认新密码 *</label>
-                    <input type="password" id="confirm-user-password" class="input-field" minlength="6" required>
-                </div>
-                
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" id="cancel-change-password" class="btn-secondary">取消</button>
-                    <button type="submit" class="btn-primary">保存密码</button>
-                </div>
-            </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示消息 -->
+    <div id="toast" class="fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full hidden">
+        <div class="flex items-center">
+            <i id="toast-icon" class="fa fa-check-circle mr-2"></i>
+            <span id="toast-message">操作成功</span>
         </div>
     </div>
 
     <script>
-        class MarcoPoloSystem {
-            constructor() {
-                // 状态管理
-                this.state = {
-                    userType: null,
-                    products: [],
-                    filteredProducts: [],
-                    currentPage: 1,
-                    itemsPerPage: 12,
-                    viewMode: 'grid',
-                    credentials: {
-                        user: 'user123',
-                        admin: 'admin123'
-                    },
-                    customOptions: {
-                        series: [],
-                        sizes: []
-                    },
-                    searchTerm: ''
-                };
+        // 全局变量
+        let currentUser = 'user'; // 当前用户类型: user/admin
+        let currentView = 'grid'; // 当前视图: grid/list
+        let products = []; // 产品数据
+        let customSeries = ['基础款', '进阶款', '旗舰款']; // 自定义产品系列
+        let customSizes = ['S', 'M', 'L', 'XL']; // 自定义尺寸规格
+        let passwords = { user: '123', admin: '123' }; // 默认密码（管理员密码123）
+        let confirmActionCallback = null; // 确认对话框回调函数
+        let seriesChart = null; // 产品系列图表实例
 
-                // 存储键名常量
-                this.STORAGE_KEYS = {
-                    products: 'marcoProducts',
-                    theme: 'marcoTheme',
-                    credentials: 'marcoCredentials',
-                    customOptions: 'marcoCustomOptions',
-                    filterState: 'marcoFilterState'
-                };
-
-                // DOM元素缓存
-                this.elements = this.cacheDomElements();
-
-                // 绑定事件
-                this.bindCoreEvents();
-                this.bindExtendedEvents();
-                this.bindSettingsEvents();
-                this.bindCustomFilterEvents();
-                this.bindImageUploadEvents();
-
-                // 初始化
-                this.initStorage();
-                this.initTheme();
-
-                console.log('系统初始化完成，支持自定义筛选选项');
-            }
-
-            // 缓存DOM元素
-            cacheDomElements() {
-                return {
-                    // 基础元素
-                    loginPage: document.getElementById('login-page'),
-                    app: document.getElementById('app'),
-                    loginBtn: document.getElementById('login-btn'),
-                    loginError: document.getElementById('login-error'),
-                    password: document.getElementById('password'),
-                    userType: document.getElementById('user-type'),
-                    togglePwd: document.getElementById('toggle-pwd'),
-                    userRole: document.getElementById('user-role'),
-                    loginUserBtn: document.getElementById('login-user'),
-                    loginAdminBtn: document.getElementById('login-admin'),
-                    logoutBtn: document.getElementById('logout-btn'),
-                    
-                    // 主功能元素
-                    themeToggle: document.getElementById('theme-toggle'),
-                    helpBtn: document.getElementById('help-btn'),
-                    backToTop: document.getElementById('back-to-top'),
-                    exportData: document.getElementById('export-data'),
-                    importData: document.getElementById('import-data'),
-                    importModal: document.getElementById('import-modal'),
-                    closeImport: document.getElementById('close-import'),
-                    cancelImport: document.getElementById('cancel-import'),
-                    confirmImport: document.getElementById('confirm-import'),
-                    importFile: document.getElementById('import-file'),
-                    importFileName: document.getElementById('import-file-name'),
-                    addProductBtn: document.getElementById('add-product'),
-                    productsContainer: document.getElementById('products-container'),
-                    noProducts: document.getElementById('no-products'),
-                    sortBy: document.getElementById('sort-by'),
-                    viewGrid: document.getElementById('view-grid'),
-                    viewList: document.getElementById('view-list'),
-                    prevPage: document.getElementById('prev-page'),
-                    nextPage: document.getElementById('next-page'),
-                    pageNumbers: document.getElementById('page-numbers'),
-                    search: document.getElementById('search'),
-                    applyFilter: document.getElementById('apply-filter'),
-                    filterLoader: document.querySelector('#apply-filter .loader'),
-                    resetFilter: document.getElementById('reset-filter'),
-                    priceMin: document.getElementById('price-min'),
-                    priceMax: document.getElementById('price-max'),
-                    statusActive: document.getElementById('status-active'),
-                    statusDiscontinued: document.getElementById('status-discontinued'),
-                    statusHot: document.getElementById('status-hot'),
-                    statusDiscount: document.getElementById('status-discount'),
-                    totalProducts: document.getElementById('total-products'),
-                    activeProducts: document.getElementById('active-products'),
-                    discontinuedProducts: document.getElementById('discontinued-products'),
-                    productModal: document.getElementById('product-modal'),
-                    modalTitle: document.getElementById('modal-title'),
-                    productForm: document.getElementById('product-form'),
-                    productId: document.getElementById('product-id'),
-                    productName: document.getElementById('product-name'),
-                    productSeries: document.getElementById('product-series'),
-                    productSize: document.getElementById('product-size'),
-                    productPrice: document.getElementById('product-price'),
-                    productStatus: document.getElementById('product-status'),
-                    productImage: document.getElementById('product-image'),
-                    cancelModal: document.getElementById('cancel-modal'),
-                    helpModal: document.getElementById('help-modal'),
-                    closeHelp: document.getElementById('close-help'),
-                    closeHelpBtn: document.getElementById('close-help-btn'),
-                    confirmModal: document.getElementById('confirm-modal'),
-                    confirmTitle: document.getElementById('confirm-title'),
-                    confirmMessage: document.getElementById('confirm-message'),
-                    confirmCancel: document.getElementById('confirm-cancel'),
-                    confirmOk: document.getElementById('confirm-ok'),
-                    toast: document.getElementById('toast'),
-                    toastIcon: document.getElementById('toast-icon'),
-                    toastText: document.getElementById('toast-text'),
-                    
-                    // 设置相关元素
-                    settingsBtn: document.getElementById('settings-btn'),
-                    settingsModal: document.getElementById('settings-modal'),
-                    closeSettings: document.getElementById('close-settings'),
-                    closeSettingsBtn: document.getElementById('close-settings-btn'),
-                    themeLight: document.getElementById('theme-light'),
-                    themeDark: document.getElementById('theme-dark'),
-                    themeAuto: document.getElementById('theme-auto'),
-                    userManagement: document.getElementById('user-management'),
-                    editUserPassword: document.getElementById('edit-user-password'),
-                    editAdminPassword: document.getElementById('edit-admin-password'),
-                    clearData: document.getElementById('clear-data'),
-                    importDemo: document.getElementById('import-demo'),
-                    clearCustomOptions: document.getElementById('clear-custom-options'),
-                    manageSeries: document.getElementById('manage-series'),
-                    manageSizes: document.getElementById('manage-sizes'),
-                    
-                    // 自定义筛选元素
-                    seriesInput: document.getElementById('series-input'),
-                    addSeries: document.getElementById('add-series'),
-                    seriesTags: document.getElementById('series-tags'),
-                    selectedSeries: document.getElementById('selected-series'),
-                    sizeInput: document.getElementById('size-input'),
-                    addSize: document.getElementById('add-size'),
-                    sizeTags: document.getElementById('size-tags'),
-                    selectedSize: document.getElementById('selected-size'),
-                    productSeriesSuggestions: document.getElementById('product-series-suggestions'),
-                    productSizeSuggestions: document.getElementById('product-size-suggestions'),
-                    
-                    // 图片上传元素
-                    imageUploadArea: document.getElementById('image-upload-area'),
-                    uploadLocal: document.getElementById('upload-local'),
-                    uploadCamera: document.getElementById('upload-camera'),
-                    imageFileInput: document.getElementById('image-file-input'),
-                    imagePreview: document.getElementById('image-preview'),
-                    cameraPreview: document.getElementById('camera-preview'),
-                    cameraControls: document.getElementById('camera-controls'),
-                    takePhoto: document.getElementById('take-photo'),
-                    cancelCamera: document.getElementById('cancel-camera'),
-                    
-                    // 修改密码模态框
-                    changePasswordModal: document.getElementById('change-password-modal'),
-                    changePasswordTitle: document.getElementById('change-password-title'),
-                    closeChangePassword: document.getElementById('close-change-password'),
-                    cancelChangePassword: document.getElementById('cancel-change-password'),
-                    changePasswordForm: document.getElementById('change-password-form'),
-                    targetUserType: document.getElementById('target-user-type'),
-                    newUserPassword: document.getElementById('new-user-password'),
-                    confirmUserPassword: document.getElementById('confirm-user-password')
-                };
-            }
-
-            // 初始化存储数据
-            initStorage() {
-                // 加载密码凭证
-                const savedCreds = localStorage.getItem(this.STORAGE_KEYS.credentials);
-                if (savedCreds) {
-                    this.state.credentials = JSON.parse(savedCreds);
-                } else {
-                    localStorage.setItem(this.STORAGE_KEYS.credentials, JSON.stringify(this.state.credentials));
-                }
-                
-                // 加载自定义选项
-                const savedOptions = localStorage.getItem(this.STORAGE_KEYS.customOptions);
-                if (savedOptions) {
-                    this.state.customOptions = JSON.parse(savedOptions);
-                } else {
-                    // 设置默认选项
-                    this.state.customOptions = {
-                        series: ['经典系列', '现代系列', '限量系列'],
-                        sizes: ['小型 (S)', '中型 (M)', '大型 (L)', '超大 (XL)']
-                    };
-                    this.saveCustomOptions();
-                }
-
-                // 加载筛选状态
-                const savedFilterState = localStorage.getItem(this.STORAGE_KEYS.filterState);
-                if (savedFilterState) {
-                    const filterState = JSON.parse(savedFilterState);
-                    Object.keys(filterState).forEach(key => {
-                        if (this.elements[key]) {
-                            if (this.elements[key].type === 'checkbox') {
-                                this.elements[key].checked = filterState[key];
-                            } else {
-                                this.elements[key].value = filterState[key];
-                            }
-                        }
-                    });
-                }
-            }
-
-            // 保存自定义选项到本地存储
-            saveCustomOptions() {
-                localStorage.setItem(this.STORAGE_KEYS.customOptions, JSON.stringify(this.state.customOptions));
-            }
-
-            // 保存筛选状态
-            saveFilterState() {
-                const filterState = {
-                    'search': this.elements.search.value,
-                    'selected-series': this.elements.selectedSeries.value,
-                    'selected-size': this.elements.selectedSize.value,
-                    'price-min': this.elements.priceMin.value,
-                    'price-max': this.elements.priceMax.value,
-                    'status-active': this.elements.statusActive.checked,
-                    'status-discontinued': this.elements.statusDiscontinued.checked,
-                    'status-hot': this.elements.statusHot.checked,
-                    'status-discount': this.elements.statusDiscount.checked,
-                    'sort-by': this.elements.sortBy.value
-                };
-                localStorage.setItem(this.STORAGE_KEYS.filterState, JSON.stringify(filterState));
-            }
-
-            // 绑定自定义筛选事件
-            bindCustomFilterEvents() {
-                // 添加产品系列
-                this.elements.addSeries.addEventListener('click', () => this.addCustomOption('series'));
-                this.elements.seriesInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') this.addCustomOption('series');
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDataFromStorage();
+            checkLoginStatus();
+            initChart();
+            
+            // 主题切换事件
+            document.querySelectorAll('input[name="theme"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    toggleTheme(this.value);
                 });
-                
-                // 添加尺寸规格
-                this.elements.addSize.addEventListener('click', () => this.addCustomOption('size'));
-                this.elements.sizeInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') this.addCustomOption('size');
-                });
-                
-                // 产品编辑时的系列和尺寸建议
-                this.elements.productSeries.addEventListener('input', () => this.showSuggestions('series'));
-                this.elements.productSize.addEventListener('input', () => this.showSuggestions('size'));
-            }
-
-            // 绑定图片上传事件
-            bindImageUploadEvents() {
-                // 上传区域点击触发文件选择
-                this.elements.imageUploadArea.addEventListener('click', () => {
-                    if (this.elements.cameraPreview.classList.contains('hidden')) {
-                        this.elements.imageFileInput.click();
+            });
+            
+            // 图片上传预览
+            document.getElementById('image-upload').addEventListener('change', function(e) {
+                if (currentUser !== 'admin') return;
+                if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('image-preview').src = e.target.result;
                     }
-                });
-                
-                // 阻止拖放默认行为
-                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                    this.elements.imageUploadArea.addEventListener(eventName, this.preventDefaults, false);
-                });
-                
-                // 高亮上传区域
-                ['dragenter', 'dragover'].forEach(eventName => {
-                    this.elements.imageUploadArea.addEventListener(eventName, () => {
-                        this.elements.imageUploadArea.classList.add('border-primary', 'bg-primary/5');
-                    }, false);
-                });
-                
-                // 取消高亮
-                ['dragleave', 'drop'].forEach(eventName => {
-                    this.elements.imageUploadArea.addEventListener(eventName, () => {
-                        this.elements.imageUploadArea.classList.remove('border-primary', 'bg-primary/5');
-                    }, false);
-                });
-                
-                // 处理文件拖放
-                this.elements.imageUploadArea.addEventListener('drop', (e) => {
-                    const dt = e.dataTransfer;
-                    const file = dt.files[0];
-                    if (file) this.handleImageFile(file);
-                }, false);
-                
-                // 本地上传按钮
-                this.elements.uploadLocal.addEventListener('click', () => {
-                    this.closeCamera();
-                    this.elements.imageFileInput.click();
-                });
-                
-                // 处理文件选择
-                this.elements.imageFileInput.addEventListener('change', (e) => {
-                    const file = e.target.files[0];
-                    if (file) this.handleImageFile(file);
-                });
-                
-                // 拍照上传按钮
-                this.elements.uploadCamera.addEventListener('click', () => this.openCamera());
-                
-                // 拍照按钮
-                this.elements.takePhoto.addEventListener('click', () => this.capturePhoto());
-                
-                // 取消拍照
-                this.elements.cancelCamera.addEventListener('click', () => this.closeCamera());
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+            
+            updateFilterOptions();
+            updateSettingsOptions();
+            
+            // 显示空数据提示（仅管理员可见）
+            if (currentUser === 'admin' && products.length === 0) {
+                document.getElementById('empty-hint').classList.remove('hidden');
+            }
+        });
+
+        // 登录相关函数
+        function switchAuth(type) {
+            const userTab = document.getElementById('user-tab');
+            const adminTab = document.getElementById('admin-tab');
+            const authTypeInput = document.getElementById('auth-type');
+            
+            if (type === 'user') {
+                userTab.classList.add('bg-primary', 'text-white');
+                userTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                adminTab.classList.remove('bg-primary', 'text-white');
+                adminTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                authTypeInput.value = 'user';
+            } else {
+                adminTab.classList.add('bg-primary', 'text-white');
+                adminTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                userTab.classList.remove('bg-primary', 'text-white');
+                userTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                authTypeInput.value = 'admin';
             }
             
-            // 阻止默认事件
-            preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        function togglePassword(fieldId = 'password') {
+            const passwordField = document.getElementById(fieldId);
+            const toggleBtn = passwordField.nextElementSibling;
             
-            // 处理图片文件
-            handleImageFile(file) {
-                // 验证文件类型
-                if (!file.type.match('image.*')) {
-                    this.showToast('请选择图片文件', false);
-                    return;
-                }
-                
-                // 验证文件大小 (5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    this.showToast('图片大小不能超过5MB', false);
-                    return;
-                }
-                
-                // 读取文件并显示预览
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.elements.productImage.value = e.target.result;
-                    this.elements.imagePreview.src = e.target.result;
-                    this.elements.imagePreview.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            }
-            
-            // 打开相机
-            openCamera() {
-                // 关闭图片预览
-                this.elements.imagePreview.style.display = 'none';
-                this.elements.productImage.value = '';
-                
-                // 显示相机预览和控制
-                this.elements.cameraPreview.classList.remove('hidden');
-                this.elements.cameraControls.classList.remove('hidden');
-                
-                // 获取摄像头流
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    navigator.mediaDevices.getUserMedia({ video: true })
-                        .then((stream) => {
-                            this.mediaStream = stream;
-                            this.elements.cameraPreview.srcObject = stream;
-                        })
-                        .catch((err) => {
-                            console.error('无法访问摄像头:', err);
-                            this.showToast('无法访问摄像头，请确保已授予权限', false);
-                            this.closeCamera();
-                        });
-                } else {
-                    this.showToast('您的浏览器不支持摄像头功能', false);
-                    this.closeCamera();
-                }
-            }
-            
-            // 关闭相机
-            closeCamera() {
-                if (this.mediaStream) {
-                    this.mediaStream.getTracks().forEach(track => track.stop());
-                    this.mediaStream = null;
-                }
-                this.elements.cameraPreview.classList.add('hidden');
-                this.elements.cameraControls.classList.add('hidden');
-                this.elements.cameraPreview.srcObject = null;
-            }
-            
-            // 拍摄照片
-            capturePhoto() {
-                const canvas = document.createElement('canvas');
-                canvas.width = this.elements.cameraPreview.videoWidth;
-                canvas.height = this.elements.cameraPreview.videoHeight;
-                
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(this.elements.cameraPreview, 0, 0, canvas.width, canvas.height);
-                
-                // 将画布内容转为DataURL
-                const imageDataUrl = canvas.toDataURL('image/jpeg');
-                this.elements.productImage.value = imageDataUrl;
-                this.elements.imagePreview.src = imageDataUrl;
-                this.elements.imagePreview.style.display = 'block';
-                
-                // 关闭相机
-                this.closeCamera();
-            }
-
-            // 添加自定义选项（系列或尺寸）
-            addCustomOption(type) {
-                const inputElem = type === 'series' ? this.elements.seriesInput : this.elements.sizeInput;
-                const value = inputElem.value.trim();
-                
-                if (!value) {
-                    this.showToast(`请输入${type === 'series' ? '产品系列' : '尺寸规格'}名称`, false);
-                    return;
-                }
-                
-                const optionList = type === 'series' ? this.state.customOptions.series : this.state.customOptions.sizes;
-                
-                // 检查是否已存在
-                if (optionList.includes(value)) {
-                    this.showToast(`${type === 'series' ? '产品系列' : '尺寸规格'}已存在`, false);
-                    return;
-                }
-                
-                // 添加新选项
-                optionList.push(value);
-                this.saveCustomOptions();
-                
-                // 更新UI
-                this.renderCustomTags(type);
-                this.renderManageOptions(); // 更新设置页面的管理标签
-                inputElem.value = '';
-                
-                this.showToast(`${type === 'series' ? '产品系列' : '尺寸规格'}已添加`);
-            }
-
-            // 渲染自定义标签（筛选时显示）
-            renderCustomTags(type) {
-                const container = type === 'series' ? this.elements.seriesTags : this.elements.sizeTags;
-                const options = type === 'series' ? this.state.customOptions.series : this.state.customOptions.sizes;
-                const selectedValue = type === 'series' ? this.elements.selectedSeries.value : this.elements.selectedSize.value;
-                
-                container.innerHTML = '';
-                
-                options.forEach(option => {
-                    const isSelected = option === selectedValue;
-                    const tag = document.createElement('div');
-                    tag.className = `tag-item ${isSelected ? 'bg-primary/20 text-primary' : ''}`;
-                    tag.innerHTML = `
-                        <span>${option}</span>
-                        <i class="fa fa-times tag-delete" data-type="${type}" data-value="${option}"></i>
-                    `;
-                    
-                    // 点击标签选择/取消选择
-                    tag.querySelector('span').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const inputElem = type === 'series' ? this.elements.selectedSeries : this.elements.selectedSize;
-                        inputElem.value = isSelected ? '' : option;
-                        this.renderCustomTags(type);
-                    });
-                    
-                    // 点击删除图标删除选项
-                    tag.querySelector('.tag-delete').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        this.deleteCustomOption(type, option);
-                    });
-                    
-                    container.appendChild(tag);
-                });
-                
-                // 绑定删除事件
-                this.bindDeleteOptionEvents();
-            }
-
-            // 渲染管理页面的自定义选项
-            renderManageOptions() {
-                // 渲染系列管理标签
-                this.elements.manageSeries.innerHTML = '';
-                this.state.customOptions.series.forEach(series => {
-                    const tag = document.createElement('div');
-                    tag.className = 'tag-item';
-                    tag.innerHTML = `
-                        <span>${series}</span>
-                        <i class="fa fa-times tag-delete" data-type="series" data-value="${series}"></i>
-                    `;
-                    this.elements.manageSeries.appendChild(tag);
-                });
-                
-                // 渲染尺寸管理标签
-                this.elements.manageSizes.innerHTML = '';
-                this.state.customOptions.sizes.forEach(size => {
-                    const tag = document.createElement('div');
-                    tag.className = 'tag-item';
-                    tag.innerHTML = `
-                        <span>${size}</span>
-                        <i class="fa fa-times tag-delete" data-type="size" data-value="${size}"></i>
-                    `;
-                    this.elements.manageSizes.appendChild(tag);
-                });
-                
-                // 绑定删除事件
-                this.bindDeleteOptionEvents();
-            }
-
-            // 绑定删除选项事件
-            bindDeleteOptionEvents() {
-                document.querySelectorAll('.tag-delete').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const type = btn.getAttribute('data-type');
-                        const value = btn.getAttribute('data-value');
-                        this.deleteCustomOption(type, value);
-                    });
-                });
-            }
-
-            // 删除自定义选项
-            deleteCustomOption(type, value) {
-                const optionList = type === 'series' ? this.state.customOptions.series : this.state.customOptions.sizes;
-                const selectedInput = type === 'series' ? this.elements.selectedSeries : this.elements.selectedSize;
-                
-                // 如果删除的是当前选中项，清除选择
-                if (selectedInput.value === value) {
-                    selectedInput.value = '';
-                }
-                
-                // 从数组中删除
-                const index = optionList.indexOf(value);
-                if (index > -1) {
-                    optionList.splice(index, 1);
-                    this.saveCustomOptions();
-                    
-                    // 更新UI
-                    this.renderCustomTags(type);
-                    this.renderManageOptions();
-                    this.showToast(`${type === 'series' ? '产品系列' : '尺寸规格'}已删除`);
-                }
-            }
-
-            // 显示产品编辑时的建议
-            showSuggestions(type) {
-                const inputElem = type === 'series' ? this.elements.productSeries : this.elements.productSize;
-                const suggestionsElem = type === 'series' ? this.elements.productSeriesSuggestions : this.elements.productSizeSuggestions;
-                const options = type === 'series' ? this.state.customOptions.series : this.state.customOptions.sizes;
-                const value = inputElem.value.toLowerCase();
-                
-                if (!value) {
-                    suggestionsElem.innerHTML = '';
-                    return;
-                }
-                
-                // 过滤匹配的选项
-                const matches = options.filter(option => 
-                    option.toLowerCase().includes(value)
-                );
-                
-                if (matches.length > 0) {
-                    suggestionsElem.innerHTML = `
-                        <div class="text-xs">建议: ${matches.join('、')}</div>
-                    `;
-                } else {
-                    suggestionsElem.innerHTML = `
-                        <div class="text-xs text-gray-400">没有匹配的${type === 'series' ? '系列' : '尺寸'}，将创建新选项</div>
-                    `;
-                }
-            }
-
-            // 清除所有自定义选项
-            clearAllCustomOptions() {
-                this.showConfirmDialog(
-                    '确认清除',
-                    '确定要删除所有自定义的产品系列和尺寸规格吗？',
-                    () => {
-                        // 恢复默认选项
-                        this.state.customOptions = {
-                            series: ['经典系列', '现代系列', '限量系列'],
-                            sizes: ['小型 (S)', '中型 (M)', '大型 (L)', '超大 (XL)']
-                        };
-                        
-                        // 清除选择
-                        this.elements.selectedSeries.value = '';
-                        this.elements.selectedSize.value = '';
-                        
-                        // 保存并更新UI
-                        this.saveCustomOptions();
-                        this.renderCustomTags('series');
-                        this.renderCustomTags('size');
-                        this.renderManageOptions();
-                        
-                        this.showToast('所有自定义选项已重置为默认值');
-                    }
-                );
-            }
-
-            // 重置筛选条件
-            resetFilter() {
-                this.elements.search.value = '';
-                this.elements.selectedSeries.value = '';
-                this.elements.selectedSize.value = '';
-                this.elements.priceMin.value = '';
-                this.elements.priceMax.value = '';
-                this.elements.statusActive.checked = true;
-                this.elements.statusDiscontinued.checked = false;
-                this.elements.statusHot.checked = false;
-                this.elements.statusDiscount.checked = false;
-                this.elements.sortBy.value = 'newest';
-                
-                // 重新渲染标签以更新选中状态
-                this.renderCustomTags('series');
-                this.renderCustomTags('size');
-                
-                this.filterProducts();
-                this.saveFilterState();
-            }
-
-            // 筛选产品
-            filterProducts() {
-                this.elements.applyFilter.querySelector('span').textContent = '筛选中';
-                this.elements.filterLoader.classList.remove('hidden');
-                
-                setTimeout(() => {
-                    const searchTerm = this.elements.search.value.toLowerCase().trim();
-                    this.state.searchTerm = searchTerm;
-                    const series = this.elements.selectedSeries.value;
-                    const size = this.elements.selectedSize.value;
-                    const priceMin = parseFloat(this.elements.priceMin.value) || 0;
-                    const priceMax = parseFloat(this.elements.priceMax.value) || Infinity;
-                    
-                    const statuses = [];
-                    if (this.elements.statusActive.checked) statuses.push('active');
-                    if (this.elements.statusDiscontinued.checked) statuses.push('discontinued');
-                    if (this.elements.statusHot.checked) statuses.push('hot');
-                    if (this.elements.statusDiscount.checked) statuses.push('discount');
-                    
-                    this.state.filteredProducts = this.state.products.filter(product => {
-                        const matchesSearch = !searchTerm || 
-                                             product.name.toLowerCase().includes(searchTerm) ||
-                                             product.id.toLowerCase().includes(searchTerm);
-                        
-                        const matchesSeries = !series || product.series === series;
-                        const matchesSize = !size || product.size === size;
-                        const matchesPrice = product.price >= priceMin && product.price <= priceMax;
-                        const matchesStatus = statuses.length === 0 || statuses.includes(product.status);
-                        
-                        return matchesSearch && matchesSeries && matchesSize && matchesPrice && matchesStatus;
-                    });
-                    
-                    this.sortProducts();
-                    this.state.currentPage = 1;
-                    this.renderProducts();
-                    this.updateStatistics();
-                    this.renderPagination();
-                    
-                    this.elements.applyFilter.querySelector('span').textContent = '应用筛选';
-                    this.elements.filterLoader.classList.add('hidden');
-                    
-                    this.showToast(`筛选完成，找到 ${this.state.filteredProducts.length} 个产品`);
-                    this.saveFilterState();
-                }, 300);
-            }
-
-            // 渲染分页
-            renderPagination() {
-                const totalPages = Math.ceil(this.state.filteredProducts.length / this.state.itemsPerPage);
-                this.elements.pageNumbers.innerHTML = '';
-                
-                // 最多显示5个页码
-                let startPage = Math.max(1, this.state.currentPage - 2);
-                let endPage = Math.min(totalPages, startPage + 4);
-                
-                // 如果接近末尾，调整起始页
-                if (endPage - startPage < 4 && startPage > 1) {
-                    startPage = Math.max(1, endPage - 4);
-                }
-                
-                for (let i = startPage; i <= endPage; i++) {
-                    const pageBtn = document.createElement('button');
-                    pageBtn.className = `px-4 py-2 border ${i === this.state.currentPage ? 'bg-primary text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50'}`;
-                    pageBtn.textContent = i;
-                    pageBtn.addEventListener('click', () => {
-                        this.state.currentPage = i;
-                        this.renderProducts();
-                        this.renderPagination();
-                        this.elements.productsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    });
-                    this.elements.pageNumbers.appendChild(pageBtn);
-                }
-                
-                this.elements.prevPage.disabled = this.state.currentPage === 1;
-                this.elements.nextPage.disabled = this.state.currentPage === totalPages || totalPages === 0;
-            }
-
-            // 打开设置面板
-            openSettings() {
-                // 根据用户类型显示/隐藏用户管理
-                if (this.state.userType === 'admin') {
-                    this.elements.userManagement.classList.remove('hidden');
-                } else {
-                    this.elements.userManagement.classList.add('hidden');
-                }
-                
-                // 同步当前主题设置
-                this.syncThemeSettings();
-                
-                // 渲染管理选项
-                this.renderManageOptions();
-                
-                this.elements.settingsModal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-            }
-
-            // 初始化默认数据
-            initDefaultData() {
-                const savedProducts = localStorage.getItem(this.STORAGE_KEYS.products);
-                if (savedProducts) {
-                    this.state.products = JSON.parse(savedProducts);
-                } else {
-                    // 默认产品数据
-                    this.state.products = [
-                        {
-                            id: 'MP-2023-001',
-                            name: '经典款 Marco Polo',
-                            series: '经典系列',
-                            size: '中型 (M)',
-                            price: 2499,
-                            status: 'active',
-                            image: 'https://picsum.photos/id/26/400/300',
-                            createdAt: new Date('2023-01-15').getTime()
-                        },
-                        {
-                            id: 'MP-2023-042',
-                            name: '现代简约款',
-                            series: '现代系列',
-                            size: '大型 (L)',
-                            price: 1899,
-                            status: 'hot',
-                            image: 'https://picsum.photos/id/96/400/300',
-                            createdAt: new Date('2023-03-22').getTime()
-                        },
-                        {
-                            id: 'MP-2022-156',
-                            name: '限量版珍藏款',
-                            series: '限量系列',
-                            size: '小型 (S)',
-                            price: 3699,
-                            status: 'discontinued',
-                            image: 'https://picsum.photos/id/65/400/300',
-                            createdAt: new Date('2022-11-05').getTime()
-                        },
-                        {
-                            id: 'MP-2023-088',
-                            name: '商务精英款',
-                            series: '现代系列',
-                            size: '超大 (XL)',
-                            price: 1599,
-                            status: 'discount',
-                            image: 'https://picsum.photos/id/42/400/300',
-                            createdAt: new Date('2023-05-18').getTime()
-                        }
-                    ];
-                    this.saveProducts();
-                }
-                
-                this.state.filteredProducts = [...this.state.products];
-                
-                // 初始化自定义标签
-                this.renderCustomTags('series');
-                this.renderCustomTags('size');
-            }
-
-            // 保存产品
-            saveProduct() {
-                const productData = {
-                    id: this.elements.productId.value,
-                    name: this.elements.productName.value,
-                    series: this.elements.productSeries.value.trim(),
-                    size: this.elements.productSize.value.trim(),
-                    price: parseFloat(this.elements.productPrice.value),
-                    status: this.elements.productStatus.value,
-                    image: this.elements.productImage.value,
-                    createdAt: this.elements.productId.value && this.state.products.some(p => p.id === this.elements.productId.value)
-                        ? this.state.products.find(p => p.id === this.elements.productId.value).createdAt
-                        : new Date().getTime()
-                };
-                
-                // 价格验证
-                if (isNaN(productData.price) || productData.price <= 0) {
-                    this.showToast('请输入有效的价格（大于0）', false);
-                    return;
-                }
-                
-                if (!productData.series) {
-                    this.showToast('请输入产品系列', false);
-                    return;
-                }
-                
-                // 如果是新系列或新尺寸，自动添加到自定义选项
-                if (!this.state.customOptions.series.includes(productData.series)) {
-                    this.state.customOptions.series.push(productData.series);
-                    this.saveCustomOptions();
-                    this.renderCustomTags('series');
-                    this.renderManageOptions();
-                }
-                
-                if (productData.size && !this.state.customOptions.sizes.includes(productData.size)) {
-                    this.state.customOptions.sizes.push(productData.size);
-                    this.saveCustomOptions();
-                    this.renderCustomTags('size');
-                    this.renderManageOptions();
-                }
-                
-                if (this.state.products.some(p => p.id === productData.id)) {
-                    const index = this.state.products.findIndex(p => p.id === productData.id);
-                    this.state.products[index] = productData;
-                    this.showToast('产品已更新');
-                } else {
-                    this.state.products.unshift(productData);
-                    this.showToast('产品已添加');
-                }
-                
-                this.saveProducts();
-                this.filterProducts();
-                this.closeProductModal();
-            }
-
-            // 绑定设置相关事件
-            bindSettingsEvents() {
-                // 打开/关闭设置面板
-                this.elements.settingsBtn.addEventListener('click', () => this.openSettings());
-                this.elements.closeSettings.addEventListener('click', () => this.closeSettings());
-                this.elements.closeSettingsBtn.addEventListener('click', () => this.closeSettings());
-                
-                // 主题设置
-                this.elements.themeLight.addEventListener('change', () => this.setTheme('light'));
-                this.elements.themeDark.addEventListener('change', () => this.setTheme('dark'));
-                this.elements.themeAuto.addEventListener('change', () => this.setTheme('auto'));
-                
-                // 用户管理 - 修改密码
-                this.elements.editUserPassword.addEventListener('click', () => {
-                    this.openChangePasswordModal('user');
-                });
-                
-                this.elements.editAdminPassword.addEventListener('click', () => {
-                    this.openChangePasswordModal('admin');
-                });
-                
-                // 修改密码表单提交
-                this.elements.changePasswordForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.saveUserPassword();
-                });
-                
-                // 关闭修改密码模态框
-                this.elements.closeChangePassword.addEventListener('click', () => this.closeChangePasswordModal());
-                this.elements.cancelChangePassword.addEventListener('click', () => this.closeChangePasswordModal());
-                
-                // 数据管理
-                this.elements.clearData.addEventListener('click', () => this.confirmClearData());
-                this.elements.importDemo.addEventListener('click', () => this.importDemoData());
-                
-                // 自定义选项管理
-                this.elements.clearCustomOptions.addEventListener('click', () => this.clearAllCustomOptions());
-            }
-            
-            // 打开修改密码模态框
-            openChangePasswordModal(userType) {
-                this.elements.targetUserType.value = userType;
-                this.elements.changePasswordTitle.textContent = `修改${userType === 'user' ? '普通用户' : '管理员'}密码`;
-                this.elements.newUserPassword.value = '';
-                this.elements.confirmUserPassword.value = '';
-                
-                this.elements.changePasswordModal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-            }
-            
-            // 关闭修改密码模态框
-            closeChangePasswordModal() {
-                this.elements.changePasswordModal.classList.add('hidden');
-                document.body.style.overflow = '';
-            }
-            
-            // 保存用户密码
-            saveUserPassword() {
-                const userType = this.elements.targetUserType.value;
-                const newPassword = this.elements.newUserPassword.value.trim();
-                const confirmPassword = this.elements.confirmUserPassword.value.trim();
-                
-                if (newPassword.length < 6) {
-                    this.showToast('密码长度至少6位', false);
-                    return;
-                }
-                
-                if (newPassword !== confirmPassword) {
-                    this.showToast('两次输入的密码不一致', false);
-                    return;
-                }
-                
-                // 更新密码
-                this.state.credentials[userType] = newPassword;
-                localStorage.setItem(this.STORAGE_KEYS.credentials, JSON.stringify(this.state.credentials));
-                
-                this.closeChangePasswordModal();
-                this.showToast(`${userType === 'user' ? '普通用户' : '管理员'}密码修改成功`);
-                
-                // 如果修改的是当前登录用户的密码，提示重新登录
-                if (userType === this.state.userType) {
-                    setTimeout(() => {
-                        this.handleLogout();
-                    }, 1500);
-                }
-            }
-
-            // 处理登录
-            handleLogin() {
-                console.log('登录流程开始');
-                const password = this.elements.password.value.trim();
-                const userType = this.elements.userType.value;
-                
-                if (password === this.state.credentials[userType]) {
-                    console.log('登录验证成功，类型：', userType);
-                    this.state.userType = userType;
-                    
-                    this.elements.loginPage.classList.add('hidden');
-                    this.elements.app.classList.remove('hidden');
-                    this.elements.app.classList.add('fade-in');
-                    
-                    this.elements.userRole.textContent = userType === 'user' ? '普通用户' : '管理员';
-                    
-                    if (userType === 'admin') {
-                        this.elements.addProductBtn.classList.remove('hidden');
-                        this.elements.importData.classList.remove('hidden');
-                    }
-                    
-                    this.elements.loginError.classList.add('hidden');
-                    
-                    this.initDefaultData();
-                    this.renderProducts();
-                    this.updateStatistics();
-                    this.renderPagination();
-                    
-                    this.showToast(`欢迎回来，${userType === 'user' ? '普通用户' : '管理员'}`);
-                } else {
-                    console.log('登录验证失败');
-                    this.elements.loginError.classList.remove('hidden');
-                    setTimeout(() => {
-                        this.elements.loginError.classList.add('hidden');
-                    }, 3000);
-                }
-            }
-
-            // 处理退出登录
-            handleLogout() {
-                this.showConfirmDialog(
-                    '确认退出',
-                    '确定要退出登录吗？',
-                    () => {
-                        this.elements.app.classList.add('hidden');
-                        this.elements.loginPage.classList.remove('hidden');
-                        this.elements.password.value = '';
-                        this.state.userType = null;
-                        this.setUserType('user');
-                    }
-                );
-            }
-
-            // 设置用户类型
-            setUserType(type) {
-                this.elements.userType.value = type;
-                this.elements.loginError.classList.add('hidden');
-                
-                if (type === 'user') {
-                    this.elements.loginUserBtn.classList.add('bg-primary', 'text-white');
-                    this.elements.loginUserBtn.classList.remove('bg-gray-100', 'text-gray-600', 'dark:bg-gray-700', 'dark:text-gray-300');
-                    this.elements.loginAdminBtn.classList.remove('bg-primary', 'text-white');
-                    this.elements.loginAdminBtn.classList.add('bg-gray-100', 'text-gray-600', 'dark:bg-gray-700', 'dark:text-gray-300');
-                } else {
-                    this.elements.loginAdminBtn.classList.add('bg-primary', 'text-white');
-                    this.elements.loginAdminBtn.classList.remove('bg-gray-100', 'text-gray-600', 'dark:bg-gray-700', 'dark:text-gray-300');
-                    this.elements.loginUserBtn.classList.remove('bg-primary', 'text-white');
-                    this.elements.loginUserBtn.classList.add('bg-gray-100', 'text-gray-600', 'dark:bg-gray-700', 'dark:text-gray-300');
-                }
-                console.log('用户类型切换为：', type);
-            }
-
-            // 切换密码可见性
-            togglePasswordVisibility() {
-                const type = this.elements.password.getAttribute('type') === 'password' ? 'text' : 'password';
-                this.elements.password.setAttribute('type', type);
-                this.elements.togglePwd.querySelector('i').className = type === 'password' ? 'fa fa-eye-slash' : 'fa fa-eye';
-            }
-
-            // 保存产品到本地存储
-            saveProducts() {
-                localStorage.setItem(this.STORAGE_KEYS.products, JSON.stringify(this.state.products));
-            }
-
-            // 显示提示消息
-            showToast(message, isSuccess = true) {
-                this.elements.toastText.textContent = message;
-                this.elements.toastIcon.className = isSuccess ? 
-                    'fa fa-check mr-2' : 'fa fa-exclamation-circle mr-2 text-yellow-400';
-                this.elements.toast.classList.add('show');
-                
-                setTimeout(() => {
-                    this.elements.toast.classList.remove('show');
-                }, 3000);
-            }
-
-            // 渲染产品列表，支持搜索高亮
-            renderProducts() {
-                const startIndex = (this.state.currentPage - 1) * this.state.itemsPerPage;
-                const currentProducts = this.state.filteredProducts.slice(
-                    startIndex, 
-                    startIndex + this.state.itemsPerPage
-                );
-                
-                this.elements.productsContainer.innerHTML = '';
-                
-                if (currentProducts.length === 0) {
-                    this.elements.noProducts.classList.remove('hidden');
-                    return;
-                }
-                
-                this.elements.noProducts.classList.add('hidden');
-                
-                const statusMap = {
-                    active: { text: '在售', class: 'bg-success' },
-                    discontinued: { text: '已停产', class: 'bg-gray-500' },
-                    hot: { text: '爆款', class: 'bg-warning' },
-                    discount: { text: '特价', class: 'bg-danger' }
-                };
-
-                currentProducts.forEach(product => {
-                    const status = statusMap[product.status] || statusMap.active;
-                    // 处理搜索高亮
-                    let nameHtml = product.name;
-                    let idHtml = product.id;
-                    const searchTerm = this.state.searchTerm;
-                    
-                    if (searchTerm) {
-                        const regex = new RegExp(`(${searchTerm})`, 'gi');
-                        nameHtml = product.name.replace(regex, '<span class="search-highlight">$1</span>');
-                        idHtml = product.id.replace(regex, '<span class="search-highlight">$1</span>');
-                    }
-                    
-                    let cardHtml = '';
-                    if (this.state.viewMode === 'grid') {
-                        cardHtml = `
-                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden card-hover">
-                                <div class="relative h-48 bg-gray-200 dark:bg-gray-600">
-                                    <img src="${product.image || 'https://picsum.photos/400/300?grayscale'}" 
-                                         alt="${product.name}" 
-                                         class="w-full h-full object-cover" 
-                                         loading="lazy"
-                                         onerror="this.src='https://picsum.photos/400/300?grayscale'">
-                                    <span class="${status.class} text-white text-xs px-2 py-1 rounded absolute top-2 left-2">
-                                        ${status.text}
-                                    </span>
-                                </div>
-                                <div class="p-4">
-                                    <h4 class="font-medium mb-1">${nameHtml}</h4>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">${product.series}</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">${product.size || '无尺寸'}</p>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-primary font-bold">¥${product.price.toFixed(2)}</span>
-                                        <div class="flex space-x-1">
-                                            <button class="edit-btn p-1.5 text-gray-500 hover:text-primary" 
-                                                    data-id="${product.id}" 
-                                                    title="编辑">
-                                                <i class="fa fa-pencil"></i>
-                                            </button>
-                                            <button class="delete-btn p-1.5 text-gray-500 hover:text-danger" 
-                                                    data-id="${product.id}" 
-                                                    data-name="${product.name}"
-                                                    title="删除">
-                                                <i class="fa fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        cardHtml = `
-                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden card-hover flex">
-                                <div class="relative w-32 h-32 bg-gray-200 dark:bg-gray-600 flex-shrink-0">
-                                    <img src="${product.image || 'https://picsum.photos/300/300?grayscale'}" 
-                                         alt="${product.name}" 
-                                         class="w-full h-full object-cover" 
-                                         loading="lazy"
-                                         onerror="this.src='https://picsum.photos/300/300?grayscale'">
-                                    <span class="${status.class} text-white text-xs px-2 py-1 rounded absolute top-2 left-2">
-                                        ${status.text}
-                                    </span>
-                                </div>
-                                <div class="p-4 flex-1">
-                                    <div class="flex justify-between items-start">
-                                        <h4 class="font-medium">${nameHtml}</h4>
-                                        <span class="text-primary font-bold">¥${product.price.toFixed(2)}</span>
-                                    </div>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                        ${product.series} | ${product.size || '无尺寸'}
-                                    </p>
-                                    <div class="flex justify-end space-x-3 mt-3">
-                                        <button class="edit-btn text-sm text-gray-600 hover:text-primary" 
-                                                data-id="${product.id}">
-                                            <i class="fa fa-pencil mr-1"></i>编辑
-                                        </button>
-                                        <button class="delete-btn text-sm text-gray-600 hover:text-danger" 
-                                                data-id="${product.id}" 
-                                                data-name="${product.name}">
-                                            <i class="fa fa-trash mr-1"></i>删除
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = cardHtml;
-                    this.elements.productsContainer.appendChild(tempDiv.firstElementChild);
-                });
-                
-                this.bindProductActions();
-            }
-
-            // 绑定产品操作事件
-            bindProductActions() {
-                document.querySelectorAll('.edit-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        if (this.state.userType !== 'admin') {
-                            this.showToast('只有管理员可以编辑产品', false);
-                            return;
-                        }
-                        this.editProduct(btn.getAttribute('data-id'));
-                    });
-                });
-                
-                document.querySelectorAll('.delete-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        if (this.state.userType !== 'admin') {
-                            this.showToast('只有管理员可以删除产品', false);
-                            return;
-                        }
-                        this.showConfirmDialog(
-                            '确认删除',
-                            `确定要删除产品「${btn.getAttribute('data-name')}」吗？`,
-                            () => this.deleteProduct(btn.getAttribute('data-id'))
-                        );
-                    });
-                });
-            }
-
-            // 防抖处理筛选
-            debounceFilter() {
-                clearTimeout(this.filterTimeout);
-                this.filterTimeout = setTimeout(() => {
-                    this.filterProducts();
-                }, 500);
-            }
-
-            // 排序产品
-            sortProducts() {
-                switch (this.elements.sortBy.value) {
-                    case 'price-asc':
-                        this.state.filteredProducts.sort((a, b) => a.price - b.price);
-                        break;
-                    case 'price-desc':
-                        this.state.filteredProducts.sort((a, b) => b.price - a.price);
-                        break;
-                    case 'newest':
-                    default:
-                        this.state.filteredProducts.sort((a, b) => b.createdAt - a.createdAt);
-                        break;
-                }
-            }
-
-            // 更新统计信息
-            updateStatistics() {
-                const total = this.state.products.length;
-                const active = this.state.products.filter(p => 
-                    ['active', 'hot', 'discount'].includes(p.status)
-                ).length;
-                const discontinued = total - active;
-                
-                this.elements.totalProducts.textContent = total;
-                this.elements.activeProducts.textContent = active;
-                this.elements.discontinuedProducts.textContent = discontinued;
-                
-                this.updateChart();
-            }
-
-            // 更新图表
-            updateChart() {
-                const ctx = document.getElementById('stats-chart').getContext('2d');
-                
-                // 按系列统计
-                const seriesData = {};
-                this.state.customOptions.series.forEach(series => {
-                    seriesData[series] = { active: 0, other: 0 };
-                });
-                
-                this.state.products.forEach(product => {
-                    const isActive = ['active', 'hot', 'discount'].includes(product.status);
-                    if (seriesData[product.series]) {
-                        if (isActive) {
-                            seriesData[product.series].active++;
-                        } else {
-                            seriesData[product.series].other++;
-                        }
-                    }
-                });
-                
-                // 准备图表数据
-                const labels = Object.keys(seriesData);
-                const activeData = labels.map(series => seriesData[series].active);
-                const otherData = labels.map(series => seriesData[series].other);
-                
-                // 销毁现有图表（如果存在）
-                if (window.statsChart) {
-                    window.statsChart.destroy();
-                } else {
-                    window.statsChart = null;
-                }
-                
-                // 创建新图表
-                window.statsChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: '在售',
-                            data: activeData,
-                            backgroundColor: '#B82601',
-                            borderWidth: 0
-                        }, {
-                            label: '其他状态',
-                            data: otherData,
-                            backgroundColor: '#F8B195',
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: { beginAtZero: true, ticks: { precision: 0 } }
-                        },
-                        plugins: { 
-                            legend: { position: 'bottom' },
-                            title: { display: false }
-                        }
-                    }
-                });
-            }
-
-            // 打开产品编辑模态框
-            openProductModal(isEdit = false, productId = null) {
-                this.elements.productForm.reset();
-                this.elements.productSeriesSuggestions.innerHTML = '';
-                this.elements.productSizeSuggestions.innerHTML = '';
-                this.elements.productImage.value = '';
-                this.elements.imagePreview.style.display = 'none';
-                this.closeCamera();
-                
-                if (isEdit && productId) {
-                    const product = this.state.products.find(p => p.id === productId);
-                    if (product) {
-                        this.elements.modalTitle.textContent = '编辑产品';
-                        this.elements.productId.value = product.id;
-                        this.elements.productName.value = product.name;
-                        this.elements.productSeries.value = product.series;
-                        this.elements.productSize.value = product.size || '';
-                        this.elements.productPrice.value = product.price;
-                        this.elements.productStatus.value = product.status;
-                        this.elements.productImage.value = product.image || '';
-                        
-                        // 显示图片预览
-                        if (product.image) {
-                            this.elements.imagePreview.src = product.image;
-                            this.elements.imagePreview.style.display = 'block';
-                        }
-                    }
-                } else {
-                    this.elements.modalTitle.textContent = '添加产品';
-                    // 生成更可靠的唯一ID
-                    const timestamp = Date.now();
-                    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-                    const id = `MP-${timestamp}-${random}`;
-                    this.elements.productId.value = id;
-                }
-                
-                this.elements.productModal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-            }
-
-            // 关闭产品编辑模态框
-            closeProductModal() {
-                this.elements.productModal.classList.add('hidden');
-                document.body.style.overflow = '';
-                this.closeCamera();
-            }
-
-            // 编辑产品
-            editProduct(id) {
-                this.openProductModal(true, id);
-            }
-
-            // 删除产品
-            deleteProduct(id) {
-                this.state.products = this.state.products.filter(p => p.id !== id);
-                this.saveProducts();
-                this.filterProducts();
-                this.showToast('产品已删除');
-            }
-
-            // 切换视图模式
-            switchViewMode(mode) {
-                this.state.viewMode = mode;
-                
-                if (mode === 'grid') {
-                    this.elements.productsContainer.className = 'grid grid-cols-1 sm:grid-cols-2 gap-4';
-                    this.elements.viewGrid.classList.add('bg-primary', 'text-white');
-                    this.elements.viewGrid.classList.remove('bg-gray-100', 'dark:bg-gray-700');
-                    this.elements.viewList.classList.remove('bg-primary', 'text-white');
-                    this.elements.viewList.classList.add('bg-gray-100', 'dark:bg-gray-700');
-                } else {
-                    this.elements.productsContainer.className = 'flex flex-col gap-4';
-                    this.elements.viewList.classList.add('bg-primary', 'text-white');
-                    this.elements.viewList.classList.remove('bg-gray-100', 'dark:bg-gray-700');
-                    this.elements.viewGrid.classList.remove('bg-primary', 'text-white');
-                    this.elements.viewGrid.classList.add('bg-gray-100', 'dark:bg-gray-700');
-                }
-                
-                this.renderProducts();
-            }
-
-            // 切换页码
-            changePage(direction) {
-                if (direction === 'prev' && this.state.currentPage > 1) {
-                    this.state.currentPage--;
-                } else if (direction === 'next' && this.state.currentPage * this.state.itemsPerPage < this.state.filteredProducts.length) {
-                    this.state.currentPage++;
-                } else {
-                    return;
-                }
-                
-                this.renderProducts();
-                this.renderPagination();
-                this.elements.productsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-
-            // 显示确认对话框
-            showConfirmDialog(title, message, callback) {
-                this.elements.confirmTitle.textContent = title;
-                this.elements.confirmMessage.textContent = message;
-                this.elements.confirmModal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-                
-                const handleConfirm = () => {
-                    callback();
-                    this.closeConfirmDialog();
-                    this.elements.confirmOk.removeEventListener('click', handleConfirm);
-                };
-                
-                this.elements.confirmOk.addEventListener('click', handleConfirm);
-            }
-
-            // 关闭确认对话框
-            closeConfirmDialog() {
-                this.elements.confirmModal.classList.add('hidden');
-                document.body.style.overflow = '';
-            }
-
-            // 切换主题
-            toggleTheme() {
-                const isDark = document.documentElement.classList.toggle('dark');
-                this.elements.themeToggle.querySelector('i').className = isDark ? 'fa fa-sun-o' : 'fa fa-moon-o';
-                localStorage.setItem(this.STORAGE_KEYS.theme, isDark ? 'dark' : 'light');
-                this.showToast(isDark ? '已切换至深色模式' : '已切换至浅色模式');
-            }
-
-            // 初始化主题
-            initTheme() {
-                const savedTheme = localStorage.getItem(this.STORAGE_KEYS.theme) || 'auto';
-                
-                if (savedTheme === 'dark' || (savedTheme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                    this.elements.themeToggle.querySelector('i').className = 'fa fa-sun-o';
-                } else {
-                    document.documentElement.classList.remove('dark');
-                    this.elements.themeToggle.querySelector('i').className = 'fa fa-moon-o';
-                }
-            }
-
-            // 设置主题
-            setTheme(theme) {
-                localStorage.setItem(this.STORAGE_KEYS.theme, theme);
-                
-                if (theme === 'dark') {
-                    document.documentElement.classList.add('dark');
-                    this.elements.themeToggle.querySelector('i').className = 'fa fa-sun-o';
-                } else if (theme === 'light') {
-                    document.documentElement.classList.remove('dark');
-                    this.elements.themeToggle.querySelector('i').className = 'fa fa-moon-o';
-                } else {
-                    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                        document.documentElement.classList.add('dark');
-                        this.elements.themeToggle.querySelector('i').className = 'fa fa-sun-o';
-                    } else {
-                        document.documentElement.classList.remove('dark');
-                        this.elements.themeToggle.querySelector('i').className = 'fa fa-moon-o';
-                    }
-                }
-                
-                this.showToast(`主题已设置为${theme === 'light' ? '浅色模式' : theme === 'dark' ? '深色模式' : '跟随系统'}`);
-            }
-
-            // 同步主题设置
-            syncThemeSettings() {
-                const savedTheme = localStorage.getItem(this.STORAGE_KEYS.theme) || 'auto';
-                
-                this.elements.themeLight.checked = savedTheme === 'light';
-                this.elements.themeDark.checked = savedTheme === 'dark';
-                this.elements.themeAuto.checked = savedTheme === 'auto';
-            }
-
-            // 导出数据
-            exportData() {
-                const exportData = {
-                    products: this.state.products,
-                    customOptions: this.state.customOptions,
-                    exportTime: new Date().toLocaleString(),
-                    total: this.state.products.length
-                };
-                
-                const jsonStr = JSON.stringify(exportData, null, 2);
-                const blob = new Blob([jsonStr], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `marco_products_${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                }, 0);
-                
-                this.showToast('数据已导出');
-            }
-
-            // 打开导入模态框
-            openImportModal() {
-                this.elements.importFile.value = '';
-                this.elements.importFileName.classList.add('hidden');
-                this.elements.confirmImport.disabled = true;
-                this.elements.importModal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-            }
-
-            // 关闭导入模态框
-            closeImportModal() {
-                this.elements.importModal.classList.add('hidden');
-                document.body.style.overflow = '';
-            }
-
-            // 处理文件选择
-            handleFileSelect(event) {
-                const file = event.target.files[0];
-                if (file) {
-                    if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
-                        this.showToast('请选择JSON格式的文件', false);
-                        this.elements.importFile.value = '';
-                        this.elements.importFileName.classList.add('hidden');
-                        this.elements.confirmImport.disabled = true;
-                        return;
-                    }
-                    
-                    this.elements.importFileName.textContent = `已选择: ${file.name}`;
-                    this.elements.importFileName.classList.remove('hidden');
-                    this.elements.confirmImport.disabled = false;
-                }
-            }
-
-            // 导入数据
-            importData() {
-                const file = this.elements.importFile.files[0];
-                if (!file) {
-                    this.showToast('请选择要导入的文件', false);
-                    return;
-                }
-                
-                this.showConfirmDialog(
-                    '确认导入',
-                    '导入将覆盖现有所有产品和自定义选项数据，确定要继续吗？',
-                    () => {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            try {
-                                const data = JSON.parse(e.target.result);
-                                
-                                if (data.products && Array.isArray(data.products)) {
-                                    this.state.products = data.products;
-                                    this.saveProducts();
-                                }
-                                
-                                if (data.customOptions && data.customOptions.series && data.customOptions.sizes) {
-                                    this.state.customOptions = data.customOptions;
-                                    this.saveCustomOptions();
-                                }
-                                
-                                this.filterProducts();
-                                this.renderCustomTags('series');
-                                this.renderCustomTags('size');
-                                this.renderManageOptions();
-                                this.updateStatistics();
-                                
-                                this.closeImportModal();
-                                this.showToast('数据导入成功');
-                            } catch (error) {
-                                console.error('导入失败:', error);
-                                this.showToast('导入失败，文件格式不正确', false);
-                            }
-                        };
-                        reader.readAsText(file);
-                    }
-                );
-            }
-
-            // 打开帮助模态框
-            openHelpModal() {
-                this.elements.helpModal.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-            }
-
-            // 关闭帮助模态框
-            closeHelpModal() {
-                this.elements.helpModal.classList.add('hidden');
-                document.body.style.overflow = '';
-            }
-
-            // 滚动到顶部
-            scrollToTop() {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-
-            // 处理滚动事件
-            handleScroll() {
-                if (window.scrollY > 500) {
-                    this.elements.backToTop.classList.remove('opacity-0', 'invisible');
-                    this.elements.backToTop.classList.add('opacity-100', 'visible');
-                } else {
-                    this.elements.backToTop.classList.add('opacity-0', 'invisible');
-                    this.elements.backToTop.classList.remove('opacity-100', 'visible');
-                }
-            }
-
-            // 确认清除数据
-            confirmClearData() {
-                this.showConfirmDialog(
-                    '确认清除',
-                    '确定要清除所有产品数据吗？此操作不可恢复！',
-                    () => this.clearProductData()
-                );
-            }
-
-            // 清除产品数据
-            clearProductData() {
-                localStorage.removeItem(this.STORAGE_KEYS.products);
-                this.state.products = [];
-                this.state.filteredProducts = [];
-                this.renderProducts();
-                this.updateStatistics();
-                this.showToast('产品数据已清除');
-            }
-
-            // 导入演示数据
-            importDemoData() {
-                const demoData = [
-                    {
-                        id: 'MP-DEMO-001',
-                        name: '演示款 - 经典系列',
-                        series: '经典系列',
-                        size: '中型 (M)',
-                        price: 2499,
-                        status: 'active',
-                        image: 'https://picsum.photos/id/26/400/300',
-                        createdAt: new Date().getTime()
-                    },
-                    {
-                        id: 'MP-DEMO-002',
-                        name: '演示款 - 现代系列',
-                        series: '现代系列',
-                        size: '大型 (L)',
-                        price: 1899,
-                        status: 'hot',
-                        image: 'https://picsum.photos/id/96/400/300',
-                        createdAt: new Date().getTime()
-                    },
-                    {
-                        id: 'MP-DEMO-003',
-                        name: '演示款 - 限量系列',
-                        series: '限量系列',
-                        size: '小型 (S)',
-                        price: 3699,
-                        status: 'discount',
-                        image: 'https://picsum.photos/id/65/400/300',
-                        createdAt: new Date().getTime()
-                    }
-                ];
-                
-                this.state.products = demoData;
-                this.saveProducts();
-                this.filterProducts();
-                this.showToast('演示数据已导入');
-            }
-
-            // 关闭设置面板
-            closeSettings() {
-                this.elements.settingsModal.classList.add('hidden');
-                document.body.style.overflow = '';
-            }
-
-            // 绑定核心事件
-            bindCoreEvents() {
-                this.elements.loginBtn.addEventListener('click', () => this.handleLogin());
-                this.elements.togglePwd.addEventListener('click', () => this.togglePasswordVisibility());
-                this.elements.loginUserBtn.addEventListener('click', () => this.setUserType('user'));
-                this.elements.loginAdminBtn.addEventListener('click', () => this.setUserType('admin'));
-                this.elements.password.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') this.handleLogin();
-                });
-                
-                this.elements.logoutBtn.addEventListener('click', () => this.handleLogout());
-            }
-
-            // 绑定扩展事件
-            bindExtendedEvents() {
-                this.elements.themeToggle.addEventListener('click', () => this.toggleTheme());
-                
-                this.elements.helpBtn.addEventListener('click', () => this.openHelpModal());
-                this.elements.closeHelp.addEventListener('click', () => this.closeHelpModal());
-                this.elements.closeHelpBtn.addEventListener('click', () => this.closeHelpModal());
-                
-                this.elements.productForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.saveProduct();
-                });
-                this.elements.cancelModal.addEventListener('click', () => this.closeProductModal());
-                
-                this.elements.confirmCancel.addEventListener('click', () => this.closeConfirmDialog());
-                
-                this.elements.search.addEventListener('input', () => this.debounceFilter());
-                this.elements.search.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') this.filterProducts();
-                });
-                this.elements.applyFilter.addEventListener('click', () => this.filterProducts());
-                this.elements.resetFilter.addEventListener('click', () => this.resetFilter());
-                
-                this.elements.sortBy.addEventListener('change', () => this.filterProducts());
-                
-                this.elements.viewGrid.addEventListener('click', () => this.switchViewMode('grid'));
-                this.elements.viewList.addEventListener('click', () => this.switchViewMode('list'));
-                
-                this.elements.prevPage.addEventListener('click', () => this.changePage('prev'));
-                this.elements.nextPage.addEventListener('click', () => this.changePage('next'));
-                
-                window.addEventListener('scroll', () => this.handleScroll());
-                
-                this.elements.backToTop.addEventListener('click', () => this.scrollToTop());
-                this.elements.exportData.addEventListener('click', () => this.exportData());
-                this.elements.importData.addEventListener('click', () => this.openImportModal());
-                this.elements.closeImport.addEventListener('click', () => this.closeImportModal());
-                this.elements.cancelImport.addEventListener('click', () => this.closeImportModal());
-                this.elements.confirmImport.addEventListener('click', () => this.importData());
-                this.elements.importFile.addEventListener('change', (e) => this.handleFileSelect(e));
-                
-                // 拖放文件上传
-                const dropArea = this.elements.importFile.parentElement;
-                dropArea.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    dropArea.classList.add('border-primary');
-                });
-                
-                dropArea.addEventListener('dragleave', () => {
-                    dropArea.classList.remove('border-primary');
-                });
-                
-                dropArea.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    dropArea.classList.remove('border-primary');
-                    if (e.dataTransfer.files.length) {
-                        this.elements.importFile.files = e.dataTransfer.files;
-                        this.handleFileSelect({ target: this.elements.importFile });
-                    }
-                });
-                
-                this.elements.addProductBtn.addEventListener('click', () => this.openProductModal());
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleBtn.innerHTML = '<i class="fa fa-eye"></i>';
+            } else {
+                passwordField.type = 'password';
+                toggleBtn.innerHTML = '<i class="fa fa-eye-slash"></i>';
             }
         }
 
-        // 初始化应用
-        document.addEventListener('DOMContentLoaded', () => {
-            const app = new MarcoPoloSystem();
-        });
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const authType = document.getElementById('auth-type').value;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorElement = document.getElementById('login-error');
+            
+            if (!username) {
+                errorElement.textContent = '用户名不能为空';
+                errorElement.classList.remove('hidden');
+                return;
+            }
+            
+            if (password !== passwords[authType]) {
+                errorElement.textContent = '用户名或密码错误';
+                errorElement.classList.remove('hidden');
+                return;
+            }
+            
+            // 登录成功处理 - 核心修复点：强制显示管理员功能
+            currentUser = authType;
+            localStorage.setItem('mp_currentUser', authType);
+            localStorage.setItem('mp_username', username);
+            
+            // 切换页面
+            document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('app-page').classList.remove('hidden');
+            
+            // 更新用户角色显示
+            const roleText = authType === 'user' ? '普通用户' : '管理员';
+            document.getElementById('user-role').textContent = roleText;
+            
+            // 管理员权限：强制显示所有管理功能（直接操作style，避免CSS冲突）
+            if (authType === 'admin') {
+                // 强制显示设置按钮（齿轮图标）
+                document.getElementById('settings-btn').style.display = 'block';
+                // 显示操作栏
+                document.getElementById('action-bar').style.display = 'flex';
+                // 显示添加系列/尺寸的输入框
+                document.getElementById('series-add-container').style.display = 'flex';
+                document.getElementById('size-add-container').style.display = 'flex';
+                // 显示设置页管理功能
+                document.getElementById('user-management').style.display = 'block';
+                document.getElementById('custom-options').style.display = 'block';
+                document.getElementById('data-management').style.display = 'block';
+                document.getElementById('admin-help').style.display = 'block';
+            } else {
+                // 普通用户隐藏所有管理员功能
+                document.getElementById('settings-btn').style.display = 'none';
+                document.getElementById('action-bar').style.display = 'none';
+                document.getElementById('series-add-container').style.display = 'none';
+                document.getElementById('size-add-container').style.display = 'none';
+                document.getElementById('user-management').style.display = 'none';
+                document.getElementById('custom-options').style.display = 'none';
+                document.getElementById('data-management').style.display = 'none';
+                document.getElementById('admin-help').style.display = 'none';
+            }
+            
+            // 加载产品数据
+            renderProducts();
+            updateStatistics();
+            showToast(`欢迎，${username}！`, 'success');
+        }
+
+        function checkLoginStatus() {
+            const savedUser = localStorage.getItem('mp_currentUser');
+            const savedUsername = localStorage.getItem('mp_username');
+            
+            if (savedUser && savedUsername) {
+                currentUser = savedUser;
+                
+                // 切换到应用页面
+                document.getElementById('login-page').classList.add('hidden');
+                document.getElementById('app-page').classList.remove('hidden');
+                
+                // 更新用户角色显示
+                const roleText = savedUser === 'user' ? '普通用户' : '管理员';
+                document.getElementById('user-role').textContent = roleText;
+                
+                // 管理员权限：强制显示所有管理功能（直接操作style）
+                if (savedUser === 'admin') {
+                    document.getElementById('settings-btn').style.display = 'block';
+                    document.getElementById('action-bar').style.display = 'flex';
+                    document.getElementById('series-add-container').style.display = 'flex';
+                    document.getElementById('size-add-container').style.display = 'flex';
+                    document.getElementById('user-management').style.display = 'block';
+                    document.getElementById('custom-options').style.display = 'block';
+                    document.getElementById('data-management').style.display = 'block';
+                    document.getElementById('admin-help').style.display = 'block';
+                } else {
+                    // 普通用户隐藏所有管理员功能
+                    document.getElementById('settings-btn').style.display = 'none';
+                    document.getElementById('action-bar').style.display = 'none';
+                    document.getElementById('series-add-container').style.display = 'none';
+                    document.getElementById('size-add-container').style.display = 'none';
+                    document.getElementById('user-management').style.display = 'none';
+                    document.getElementById('custom-options').style.display = 'none';
+                    document.getElementById('data-management').style.display = 'none';
+                    document.getElementById('admin-help').style.display = 'none';
+                }
+                
+                renderProducts();
+                updateStatistics();
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('mp_currentUser');
+            localStorage.removeItem('mp_username');
+            
+            document.getElementById('app-page').classList.add('hidden');
+            document.getElementById('login-page').classList.remove('hidden');
+            
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('login-error').classList.add('hidden');
+            switchAuth('user');
+            
+            currentUser = 'user';
+        }
+
+        // 主题切换
+        function toggleTheme(theme = null) {
+            const htmlElement = document.documentElement;
+            let targetTheme = theme || (htmlElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+            
+            htmlElement.setAttribute('data-theme', targetTheme);
+            document.querySelector(`input[name="theme"][value="${targetTheme}"]`).checked = true;
+            
+            // 更新图表主题
+            if (seriesChart) {
+                const textColor = targetTheme === 'dark' ? '#e2e8f0' : '#1e293b';
+                seriesChart.options.scales.x.grid.color = targetTheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+                seriesChart.options.scales.y.grid.color = targetTheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+                seriesChart.options.scales.x.ticks.color = textColor;
+                seriesChart.options.scales.y.ticks.color = textColor;
+                seriesChart.update();
+            }
+        }
+
+        // 产品管理相关函数
+        function openProductModal(productId = null) {
+            if (currentUser !== 'admin') {
+                showToast('没有权限执行此操作', 'error');
+                return;
+            }
+            
+            const modal = document.getElementById('product-modal');
+            const form = document.getElementById('product-form');
+            const title = document.getElementById('modal-title');
+            const productIdInput = document.getElementById('product-id');
+            
+            form.reset();
+            productIdInput.value = '';
+            document.getElementById('image-preview').src = 'https://picsum.photos/200/200?random=1';
+            
+            updateProductFormOptions();
+            
+            if (productId) {
+                const product = products.find(p => p.id === productId);
+                if (product) {
+                    title.textContent = '编辑产品';
+                    productIdInput.value = product.id;
+                    document.getElementById('product-name').value = product.name;
+                    document.getElementById('product-series').value = product.series;
+                    document.getElementById('product-size').value = product.size;
+                    document.getElementById('product-price').value = product.price;
+                    document.getElementById('product-status').value = product.status;
+                    document.getElementById('image-preview').src = product.image;
+                }
+            } else {
+                title.textContent = '添加产品';
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeProductModal() {
+            document.getElementById('product-modal').classList.add('hidden');
+        }
+
+        function saveProduct(event) {
+            if (currentUser !== 'admin') {
+                showToast('没有权限执行此操作', 'error');
+                event.preventDefault();
+                return;
+            }
+            
+            event.preventDefault();
+            
+            const productId = document.getElementById('product-id').value;
+            const name = document.getElementById('product-name').value.trim();
+            const series = document.getElementById('product-series').value;
+            const size = document.getElementById('product-size').value;
+            const price = parseFloat(document.getElementById('product-price').value);
+            const status = document.getElementById('product-status').value;
+            const image = document.getElementById('image-preview').src;
+            
+            if (!name || !series || !size || isNaN(price)) {
+                showToast('请填写完整的产品信息', 'error');
+                return;
+            }
+            
+            const productData = {
+                name,
+                series,
+                size,
+                price,
+                status,
+                image,
+                createdAt: new Date().toISOString()
+            };
+            
+            if (productId) {
+                const index = products.findIndex(p => p.id === productId);
+                if (index !== -1) {
+                    productData.id = productId;
+                    products[index] = { ...products[index], ...productData };
+                    showToast('产品编辑成功', 'success');
+                }
+            } else {
+                productData.id = 'prod_' + Date.now();
+                products.unshift(productData);
+                showToast('产品添加成功', 'success');
+            }
+            
+            saveDataToStorage();
+            renderProducts();
+            updateStatistics();
+            closeProductModal();
+        }
+
+        function deleteProduct(productId) {
+            if (currentUser !== 'admin') {
+                showToast('没有权限执行此操作', 'error');
+                return;
+            }
+            
+            const index = products.findIndex(p => p.id === productId);
+            if (index !== -1) {
+                products.splice(index, 1);
+                saveDataToStorage();
+                renderProducts();
+                updateStatistics();
+                showToast('产品删除成功', 'success');
+            }
+        }
+
+        function renderProducts(filteredProducts = null) {
+            const productList = document.getElementById('product-list');
+            const productsToRender = filteredProducts || [...products];
+            
+            productList.innerHTML = '';
+            
+            if (productsToRender.length === 0) {
+                productList.innerHTML = `
+                    <div class="col-span-full text-center py-10 text-secondary dark:text-gray-400">
+                        <i class="fa fa-folder-open-o text-4xl mb-2"></i>
+                        <p>暂无符合条件的产品</p>
+                        ${currentUser === 'admin' ? '<p class="text-sm mt-1">请添加产品或调整筛选条件</p>' : ''}
+                    </div>
+                `;
+                return;
+            }
+            
+            if (currentView === 'grid') {
+                productsToRender.forEach(product => {
+                    const statusClass = getStatusClass(product.status);
+                    const statusText = getStatusText(product.status);
+                    
+                    const card = document.createElement('div');
+                    card.className = 'bg-white dark:bg-gray-800 rounded-xl shadow card-hover transition-theme';
+                    card.innerHTML = `
+                        <div class="h-48 overflow-hidden">
+                            <img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-semibold text-lg truncate">${product.name}</h3>
+                                <span class="badge ${statusClass}">${statusText}</span>
+                            </div>
+                            <div class="space-y-1 text-sm text-secondary dark:text-gray-400 mb-3">
+                                <p><i class="fa fa-tags mr-1"></i> 系列: ${product.series}</p>
+                                <p><i class="fa fa-expand mr-1"></i> 尺寸: ${product.size}</p>
+                                <p><i class="fa fa-calendar mr-1"></i> 添加时间: ${formatDate(product.createdAt)}</p>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-primary font-bold">¥${product.price.toFixed(2)}</span>
+                                ${currentUser === 'admin' ? `
+                                    <div class="flex gap-2">
+                                        <button class="text-primary hover:text-primary/80 transition-colors" 
+                                            onclick="openProductModal('${product.id}')">
+                                            <i class="fa fa-pencil"></i>
+                                        </button>
+                                        <button class="text-danger hover:text-danger/80 transition-colors" 
+                                            onclick="confirmAction('确定要删除该产品吗？', () => deleteProduct('${product.id}'))">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    productList.appendChild(card);
+                });
+            } else {
+                productsToRender.forEach(product => {
+                    const statusClass = getStatusClass(product.status);
+                    const statusText = getStatusText(product.status);
+                    
+                    const item = document.createElement('div');
+                    item.className = 'bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-3 card-hover transition-theme';
+                    item.innerHTML = `
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <div class="md:w-1/4 h-24 overflow-hidden rounded-lg">
+                                <img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover">
+                            </div>
+                            <div class="md:w-3/4 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex flex-wrap justify-between items-start gap-2 mb-2">
+                                        <h3 class="font-semibold text-lg">${product.name}</h3>
+                                        <span class="badge ${statusClass}">${statusText}</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-secondary dark:text-gray-400 mb-3">
+                                        <p><i class="fa fa-tags mr-1"></i> 系列: ${product.series}</p>
+                                        <p><i class="fa fa-expand mr-1"></i> 尺寸: ${product.size}</p>
+                                        <p><i class="fa fa-calendar mr-1"></i> ${formatDate(product.createdAt)}</p>
+                                        <p class="text-primary font-bold">¥${product.price.toFixed(2)}</p>
+                                    </div>
+                                </div>
+                                ${currentUser === 'admin' ? `
+                                    <div class="flex justify-end gap-2">
+                                        <button class="btn-secondary px-3 py-1 text-sm" 
+                                            onclick="openProductModal('${product.id}')">
+                                            <i class="fa fa-pencil mr-1"></i> 编辑
+                                        </button>
+                                        <button class="btn-danger px-3 py-1 text-sm" 
+                                            onclick="confirmAction('确定要删除该产品吗？', () => deleteProduct('${product.id}'))">
+                                            <i class="fa fa-trash mr-1"></i> 删除
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    productList.appendChild(item);
+                });
+            }
+        }
+
+        // 筛选和排序相关函数
+        function updateFilterOptions() {
+            const seriesFilter = document.getElementById('series-filter');
+            seriesFilter.innerHTML = '<option value="">全部系列</option>';
+            customSeries.forEach(series => {
+                const option = document.createElement('option');
+                option.value = series;
+                option.textContent = series;
+                seriesFilter.appendChild(option);
+            });
+            
+            const sizeFilter = document.getElementById('size-filter');
+            sizeFilter.innerHTML = '<option value="">全部尺寸</option>';
+            customSizes.forEach(size => {
+                const option = document.createElement('option');
+                option.value = size;
+                option.textContent = size;
+                sizeFilter.appendChild(option);
+            });
+        }
+
+        function updateProductFormOptions() {
+            if (currentUser !== 'admin') return;
+            
+            const seriesSelect = document.getElementById('product-series');
+            seriesSelect.innerHTML = '<option value="">选择系列</option>';
+            customSeries.forEach(series => {
+                const option = document.createElement('option');
+                option.value = series;
+                option.textContent = series;
+                seriesSelect.appendChild(option);
+            });
+            
+            const sizeSelect = document.getElementById('product-size');
+            sizeSelect.innerHTML = '<option value="">选择尺寸</option>';
+            customSizes.forEach(size => {
+                const option = document.createElement('option');
+                option.value = size;
+                option.textContent = size;
+                sizeSelect.appendChild(option);
+            });
+        }
+
+        function addCustomOption(type) {
+            if (currentUser !== 'admin') {
+                showToast('没有权限执行此操作', 'error');
+                return;
+            }
+            
+            if (type === 'series') {
+                const newSeries = document.getElementById('new-series').value.trim();
+                if (newSeries && !customSeries.includes(newSeries)) {
+                    customSeries.push(newSeries);
+                    document.getElementById('new-series').value = '';
+                    updateFilterOptions();
+                    updateProductFormOptions();
+                    updateSettingsOptions();
+                    saveDataToStorage();
+                    showToast('产品系列添加成功', 'success');
+                }
+            } else if (type === 'size') {
+                const newSize = document.getElementById('new-size').value.trim();
+                if (newSize && !customSizes.includes(newSize)) {
+                    customSizes.push(newSize);
+                    document.getElementById('new-size').value = '';
+                    updateFilterOptions();
+                    updateProductFormOptions();
+                    updateSettingsOptions();
+                    saveDataToStorage();
+                    showToast('尺寸规格添加成功', 'success');
+                }
+            }
+        }
+
+        function applyFilters() {
+            const series = document.getElementById('series-filter').value;
+            const size = document.getElementById('size-filter').value;
+            const minPrice = document.getElementById('min-price').value ? parseFloat(document.getElementById('min-price').value) : null;
+            const maxPrice = document.getElementById('max-price').value ? parseFloat(document.getElementById('max-price').value) : null;
+            const statusCheckboxes = document.querySelectorAll(
+                'input[type="checkbox"][value^="onsale"], input[type="checkbox"][value^="discontinued"],' +
+                ' input[type="checkbox"][value^="hot"], input[type="checkbox"][value^="discount"]'
+            );
+            const selectedStatus = Array.from(statusCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+            
+            let filteredProducts = [...products];
+            
+            if (series) filteredProducts = filteredProducts.filter(p => p.series === series);
+            if (size) filteredProducts = filteredProducts.filter(p => p.size === size);
+            if (minPrice !== null) filteredProducts = filteredProducts.filter(p => p.price >= minPrice);
+            if (maxPrice !== null) filteredProducts = filteredProducts.filter(p => p.price <= maxPrice);
+            if (selectedStatus.length > 0) filteredProducts = filteredProducts.filter(p => selectedStatus.includes(p.status));
+            
+            filteredProducts = sortProductsData(filteredProducts);
+            renderProducts(filteredProducts);
+            updateStatistics(filteredProducts);
+            showToast(`找到 ${filteredProducts.length} 个符合条件的产品`, 'success');
+        }
+
+        function resetFilters() {
+            document.getElementById('series-filter').value = '';
+            document.getElementById('size-filter').value = '';
+            document.getElementById('min-price').value = '';
+            document.getElementById('max-price').value = '';
+            document.getElementById('new-series').value = '';
+            document.getElementById('new-size').value = '';
+            
+            document.querySelectorAll(
+                'input[type="checkbox"][value^="onsale"], input[type="checkbox"][value^="discontinued"],' +
+                ' input[type="checkbox"][value^="hot"], input[type="checkbox"][value^="discount"]'
+            ).forEach(cb => {
+                cb.checked = true;
+            });
+            
+            document.getElementById('sort-by').value = 'newest';
+            renderProducts();
+            updateStatistics();
+            showToast('筛选条件已重置', 'success');
+        }
+
+        function switchView(viewType) {
+            currentView = viewType;
+            
+            const gridBtn = document.getElementById('grid-view');
+            const listBtn = document.getElementById('list-view');
+            
+            if (viewType === 'grid') {
+                gridBtn.classList.add('bg-primary', 'text-white');
+                gridBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                listBtn.classList.remove('bg-primary', 'text-white');
+                listBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+            } else {
+                listBtn.classList.add('bg-primary', 'text-white');
+                listBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                gridBtn.classList.remove('bg-primary', 'text-white');
+                gridBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+            }
+            
+            renderProducts();
+        }
+
+        function sortProducts() {
+            const sortedProducts = sortProductsData([...products]);
+            renderProducts(sortedProducts);
+        }
+
+        function sortProductsData(productsToSort) {
+            const sortBy = document.getElementById('sort-by').value;
+            
+            switch (sortBy) {
+                case 'newest':
+                    return productsToSort.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                case 'price-asc':
+                    return productsToSort.sort((a, b) => a.price - b.price);
+                case 'price-desc':
+                    return productsToSort.sort((a, b) => b.price - a.price);
+                default:
+                    return productsToSort;
+            }
+        }
+
+        // 数据统计和图表相关函数
+        function initChart() {
+            const ctx = document.getElementById('series-chart').getContext('2d');
+            const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+            const textColor = isDarkMode ? '#e2e8f0' : '#1e293b';
+            
+            seriesChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '产品数量',
+                        data: [],
+                        backgroundColor: [
+                            'rgba(37, 99, 235, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(239, 68, 68, 0.7)',
+                            'rgba(245, 158, 11, 0.7)',
+                            'rgba(99, 102, 241, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(37, 99, 235, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(99, 102, 241, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' },
+                            ticks: { color: textColor, precision: 0 }
+                        },
+                        x: {
+                            grid: { color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' },
+                            ticks: { color: textColor }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+            
+            updateChartData();
+        }
+
+        function updateStatistics(filteredProducts = null) {
+            const productsToCount = filteredProducts || [...products];
+            
+            const total = productsToCount.length;
+            const onsale = productsToCount.filter(p => p.status === 'onsale').length;
+            const discontinued = productsToCount.filter(p => p.status === 'discontinued').length;
+            const hot = productsToCount.filter(p => p.status === 'hot').length;
+            
+            document.getElementById('total-products').textContent = total;
+            document.getElementById('onsale-products').textContent = onsale;
+            document.getElementById('discontinued-products').textContent = discontinued;
+            document.getElementById('hot-products').textContent = hot;
+            
+            updateChartData(productsToCount);
+        }
+
+        function updateChartData(filteredProducts = null) {
+            if (!seriesChart) return;
+            
+            const productsToCount = filteredProducts || [...products];
+            const seriesCount = {};
+            
+            customSeries.forEach(series => {
+                seriesCount[series] = 0;
+            });
+            
+            productsToCount.forEach(product => {
+                if (seriesCount.hasOwnProperty(product.series)) {
+                    seriesCount[product.series]++;
+                } else {
+                    seriesCount[product.series] = 1;
+                }
+            });
+            
+            seriesChart.data.labels = Object.keys(seriesCount);
+            seriesChart.data.datasets[0].data = Object.values(seriesCount);
+            seriesChart.update();
+        }
+
+        // 设置相关函数 - 核心修复：确保设置模态框能正常打开
+        function openSettings() {
+            if (currentUser !== 'admin') {
+                showToast('没有权限执行此操作', 'error');
+                return;
+            }
+            
+            // 强制显示设置模态框
+            document.getElementById('settings-modal').classList.remove('hidden');
+            updateSettingsOptions();
+            
+            document.getElementById('user-password').value = '';
+            document.getElementById('user-password-confirm').value = '';
+            document.getElementById('admin-password').value = '';
+            document.getElementById('admin-password-confirm').value = '';
+            
+            document.getElementById('user-password-hint').classList.add('hidden');
+            document.getElementById('admin-password-hint').classList.add('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function updateSettingsOptions() {
+            if (currentUser !== 'admin') return;
+            
+            // 更新产品系列列表
+            const seriesList = document.getElementById('series-list');
+            seriesList.innerHTML = '';
+            customSeries.forEach(series => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center';
+                item.innerHTML = `
+                    <span>${series}</span>
+                    <button class="text-danger text-sm hover:text-danger/80"
+                        onclick="confirmAction('确定要删除 ${series} 吗？', () => removeCustomOption('series', '${series}'))">
+                        <i class="fa fa-times"></i>
+                    </button>
+                `;
+                seriesList.appendChild(item);
+            });
+            
+            // 更新尺寸规格列表
+            const sizeList = document.getElementById('size-list');
+            sizeList.innerHTML = '';
+            customSizes.forEach(size => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center';
+                item.innerHTML = `
+                    <span>${size}</span>
+                    <button class="text-danger text-sm hover:text-danger/80"
+                        onclick="confirmAction('确定要删除 ${size} 吗？', () => removeCustomOption('size', '${size}'))">
+                        <i class="fa fa-times"></i>
+                    </button>
+                `;
+                sizeList.appendChild(item);
+            });
+        }
+
+        // 密码修改功能
+        function savePasswords() {
+            if (currentUser !== 'admin') {
+                showToast('没有权限执行此操作', 'error');
+                return;
+            }
+            
+            const userPwd = document.getElementById('user-password').value.trim();
+            const userPwdConfirm = document.getElementById('user-password-confirm').value.trim();
+            const adminPwd = document.getElementById('admin-password').value.trim();
+            const adminPwdConfirm = document.getElementById('admin-password-confirm').value.trim();
+            
+            document.getElementById('user-password-hint').classList.add('hidden');
+            document.getElementById('admin-password-hint').classList.add('hidden');
+            
+            if (userPwd && userPwd !== userPwdConfirm) {
+                showToast('普通用户两次输入的密码不一致', 'error');
+                return;
+            }
+            
+            if (adminPwd && adminPwd !== adminPwdConfirm) {
+                showToast('管理员两次输入的密码不一致', 'error');
+                return;
+            }
+            
+            if (userPwd && userPwd.length < 3) {
+                showToast('普通用户密码长度不能少于3位', 'error');
+                return;
+            }
+            
+            if (adminPwd && adminPwd.length < 3) {
+                showToast('管理员密码长度不能少于3位', 'error');
+                return;
+            }
+            
+            let isUpdated = false;
+            if (userPwd) {
+                passwords.user = userPwd;
+                isUpdated = true;
+            }
+            
+            if (adminPwd) {
+                passwords.admin = adminPwd;
+                isUpdated = true;
+            }
+            
+            if (!isUpdated) {
+                showToast('请输入新密码进行修改', 'error');
+                return;
+            }
+            
+            saveDataToStorage();
+            document.getElementById('user-password').value = '';
+            document.getElementById('user-password-confirm').value = '';
+            document.getElementById('admin-password').value = '';
+            document.getElementById('admin-password-confirm').value = '';
+            
+            showToast('密码修改成功', 'success');
+        }
+
+        // 辅助函数
+        function getStatusClass(status) {
+            switch(status) {
+                case 'onsale': return 'bg-success/10 text-success';
+                case 'discontinued': return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+                case 'hot': return 'bg-warning/10 text-warning';
+                case 'discount': return 'bg-danger/10 text-danger';
+                default: return 'bg-gray-100 text-gray-600';
+            }
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'onsale': return '在售';
+                case 'discontinued': return '已停产';
+                case 'hot': return '爆款';
+                case 'discount': return '特价';
+                default: return '未知';
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const text = document.getElementById('toast-message');
+            
+            text.textContent = message;
+            
+            if (type === 'success') {
+                icon.className = 'fa fa-check-circle mr-2 text-success';
+            } else if (type === 'error') {
+                icon.className = 'fa fa-exclamation-circle mr-2 text-danger';
+            }
+            
+            toast.classList.remove('translate-x-full', 'hidden');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+            }, 3000);
+        }
+
+        // 数据存储相关函数
+        function loadDataFromStorage() {
+            const savedProducts = localStorage.getItem('mp_products');
+            const savedSeries = localStorage.getItem('mp_series');
+            const savedSizes = localStorage.getItem('mp_sizes');
+            const savedPasswords = localStorage.getItem('mp_passwords');
+            
+            if (savedProducts) products = JSON.parse(savedProducts);
+            if (savedSeries) customSeries = JSON.parse(savedSeries);
+            if (savedSizes) customSizes = JSON.parse(savedSizes);
+            if (savedPasswords) passwords = JSON.parse(savedPasswords);
+        }
+
+        function saveDataToStorage() {
+            if (currentUser !== 'admin') return;
+            
+            localStorage.setItem('mp_products', JSON.stringify(products));
+            localStorage.setItem('mp_series', JSON.stringify(customSeries));
+            localStorage.setItem('mp_sizes', JSON.stringify(customSizes));
+            localStorage.setItem('mp_passwords', JSON.stringify(passwords));
+        }
+
+        // 确认对话框相关函数
+        function confirmAction(message, callback) {
+            if (currentUser !== 'admin' && callback.name !== 'handleLogout') {
+                showToast('没有权限执行此操作', 'error');
+                return;
+            }
+            
+            const modal = document.getElementById('confirm-modal');
+            const messageEl = document.getElementById('confirm-message');
+            
+            messageEl.textContent = message;
+            confirmActionCallback = callback;
+            modal.classList.remove('hidden');
+        }
+
+        function closeConfirm() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            confirmActionCallback = null;
+        }
+
+        function executeConfirmAction() {
+            if (typeof confirmActionCallback === 'function') {
+                confirmActionCallback();
+            }
+            closeConfirm();
+        }
+
+        // 其他功能函数
+        function removeCustomOption(type, value) {
+            if (currentUser !== 'admin') {
+                showToast('没有权限执行此操作', 'error');
+                return;
+            }
+            
+            if (type === 'series') {
+                const index = customSeries.indexOf(value);
+                if (index !== -1) customSeries.splice(index, 1);
+            } else if (type === 'size') {
+                const index = customSizes.indexOf(value);
+                if (index !== -1) customSizes.splice(index, 1);
+            }
+            
+            updateFilterOptions();
+            updateProductFormOptions();
+            updateSettingsOptions();
+            saveDataToStorage();
+            showToast('选项已删除', 'success');
+        }
+
+        function resetCustomOptions() {
+            if (currentUser !== 'admin') {
+                showToast('没有权限执行此操作', 'error');
+                return;
+            }
+            
+            customSeries = ['基础款', '进阶款', '旗舰款'];
+            customSizes = ['S', 'M', 'L', 'XL'];
+            
+            updateFilterOptions();
+            updateProductFormOptions();
+            updateSettingsOptions();
+            saveDataToStorage();
+            showToast('自定义选项已重置为默认值', 'success');
+        }
+
+        function clearAllData() {
+            if (currentUser !== 'admin') {
+                showToast('没有权限执行此操作', 'error');
+                return;
+            }
+            
+            products = [];
+            saveDataToStorage();
+            renderProducts();
+            updateStatistics();
+            showToast('所有产品数据已清除', 'success');
+        }
+
+        function importDemoData() {
+            if (currentUser !== 'admin') {
+                showToast('没有权限执行此操作', 'error');
+                return;
+            }
+            
+            const demoData = [
+                {
+                    id: 'prod_' + Date.now() - 10000,
+                    name: '经典款T恤',
+                    series: '基础款',
+                    size: 'M',
+                    price: 99.99,
+                    status: 'onsale',
+                    image: 'https://picsum.photos/400/300?random=10',
+                    createdAt: new Date(Date.now() - 86400000 * 5).toISOString()
+                },
+                {
+                    id: 'prod_' + Date.now() - 20000,
+                    name: '高级运动裤',
+                    series: '进阶款',
+                    size: 'L',
+                    price: 199.99,
+                    status: 'hot',
+                    image: 'https://picsum.photos/400/300?random=11',
+                    createdAt: new Date(Date.now() - 86400000 * 3).toISOString()
+                }
+            ];
+            
+            products = [...demoData, ...products];
+            saveDataToStorage();
+            renderProducts();
+            updateStatistics();
+            showToast('演示数据导入成功', 'success');
+        }
+
+        function openHelp() {
+            document.getElementById('help-modal').classList.remove('hidden');
+        }
+
+        function closeHelp() {
+            document.getElementById('help-modal').classList.add('hidden');
+        }
+
+        function takePhoto() {
+            if (currentUser !== 'admin') {
+                showToast('没有权限执行此操作', 'error');
+                return;
+            }
+            showToast('拍照功能暂未实现', 'error');
+        }
+
+        function importData() {
+            if (currentUser !== 'admin') {
+                showToast('没有权限执行此操作', 'error');
+                return;
+            }
+            showToast('数据导入功能暂未实现', 'error');
+        }
+
+        function exportData() {
+            if (currentUser !== 'admin') {
+                showToast('没有权限执行此操作', 'error');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(products, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `marcopolo_products_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('数据导出成功', 'success');
+        }
     </script>
 </body>
 </html>
