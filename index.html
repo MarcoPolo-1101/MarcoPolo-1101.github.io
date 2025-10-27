@@ -1,3 +1,28 @@
+<script>
+  // 1. 引入Supabase SDK（通过CDN，无需安装依赖）
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+  // 2. 配置Supabase客户端（替换为你的项目信息）
+  const supabaseUrl = 'https://xntvwcweuqnqpgnmvbzq.supabase.co' // 例：'https://abc123.supabase.co'
+  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhudHZ3Y3dldXFucXBnbm12YnpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzODkyOTAsImV4cCI6MjA3Njk2NTI5MH0.W2_akOurOxlp1quO5uDFnc8MCTtBxrVaBhiHIxu041s' // 例：'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+  // 3. 测试连接（打开控制台查看是否成功）
+  async function testSupabaseConnection() {
+    try {
+      const { error } = await supabase.from('settings').select('*', { count: 'exact', head: true })
+      if (error) throw error
+      console.log('✅ Supabase连接成功，可正常交互')
+    } catch (err) {
+      console.error('❌ Supabase连接失败：', err.message)
+      alert('数据库连接失败，请检查URL和密钥')
+    }
+  }
+  testSupabaseConnection()
+
+  // （下面保留你原有的代码，如loginUser、showSection等函数）
+  // ...
+</script>
 <!DOCTYPE html>
 <html lang="zh-CN" data-theme="light">
 <head>
@@ -945,3 +970,4 @@
     </script>
 </body>
 </html>
+
