@@ -1,17 +1,3 @@
- function switchAuth(type) {
-            document.getElementById('auth-type').value = type;
-            if (type === 'user') {
-                document.getElementById('user-tab').classList.add('bg-primary', 'text-white');
-                document.getElementById('user-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-                document.getElementById('admin-tab').classList.remove('bg-primary', 'text-white');
-                document.getElementById('admin-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            } else {
-                document.getElementById('admin-tab').classList.add('bg-primary', 'text-white');
-                document.getElementById('admin-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-                document.getElementById('user-tab').classList.remove('bg-primary', 'text-white');
-                document.getElementById('user-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            }
-        }
 <!DOCTYPE html>
 <html lang="zh-CN" data-theme="light">
 <head>
@@ -1280,7 +1266,20 @@
         }
 
         // 切换认证类型
-       
+        function switchAuth(type) {
+            document.getElementById('auth-type').value = type;
+            if (type === 'user') {
+                document.getElementById('user-tab').classList.add('bg-primary', 'text-white');
+                document.getElementById('user-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                document.getElementById('admin-tab').classList.remove('bg-primary', 'text-white');
+                document.getElementById('admin-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+            } else {
+                document.getElementById('admin-tab').classList.add('bg-primary', 'text-white');
+                document.getElementById('admin-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                document.getElementById('user-tab').classList.remove('bg-primary', 'text-white');
+                document.getElementById('user-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+            }
+        }
 
         // 切换密码显示状态
         function togglePassword(id) {
@@ -1779,38 +1778,23 @@
 
         // 上传图片到Supabase Storage，返回图片URL
         async function uploadImageToSupabase(file) {
-  if (!file) return '';
-  
-  // 生成唯一文件名（避免重复）：产品ID_时间戳.扩展名
-  const productId = document.getElementById('product-id').value || Date.now();
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${productId}_${Date.now()}.${fileExt}`;
-  // 正确路径：直接使用文件名，存储桶已通过from('product-images')指定
-  const filePath = fileName; 
-  
-  // 上传文件
-  const { data, error } = await supabase
-    .storage
-    .from('product-images')
-    .upload(filePath, file, {
-      cacheControl: '3600', // 缓存1小时
-      upsert: true // 覆盖同名文件（编辑时）
-    });
-  
-  if (error) {
-    showToast('图片上传失败', 'error');
-    console.error('Upload image error:', error);
-    return '';
-  }
-  
-  // 获取公开访问URL
-  const { data: { publicUrl } } = supabase
-    .storage
-    .from('product-images')
-    .getPublicUrl(filePath);
-  
-  return publicUrl;
-}
+            if (!file) return '';
+            
+            // 生成唯一文件名（避免重复）：产品ID_时间戳.扩展名
+            const productId = document.getElementById('product-id').value || Date.now();
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${productId}_${Date.now()}.${fileExt}`;
+            const filePath = `product-images/${fileName}`;
+            
+            // 上传文件
+            const { data, error } = await supabase
+                .storage
+                .from('product-images')
+                .upload(filePath, file, {
+                    cacheControl: '3600', // 缓存1小时
+                    upsert: true // 覆盖同名文件（编辑时）
+                });
+            
             if (error) {
                 showToast('图片上传失败', 'error');
                 console.error('Upload image error:', error);
@@ -1828,6 +1812,3 @@
     </script>
 </body>
 </html>
-
-
-
