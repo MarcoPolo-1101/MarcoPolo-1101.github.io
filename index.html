@@ -1178,25 +1178,25 @@
                             <i class="fa fa-edit mr-1"></i> 编辑
                         </button>
                         <button class="btn-danger px-3 py-1 text-sm" onclick="confirmAction('确定要删除该产品吗？', async () => {
-                            // 删除产品图片
-                            if (${JSON.stringify(product.image)}) {
-                                const imagePath = ${JSON.stringify(product.image)}.split('/').slice(-2).join('/');
-                                await supabase.storage.from('product-images').remove([imagePath]);
-                            }
-                            
-                            // 删除产品数据
-                            const { error } = await supabase.from('products').delete().eq('id', '${product.id}');
-                            if (error) {
-                                showToast('删除失败', 'error');
-                                console.error(error);
-                            } else {
-                                showToast('删除成功');
-                                loadProducts();
-                            }
-                            closeConfirm();
-                        })">
-                            <i class="fa fa-trash mr-1"></i> 删除
-                        </button>
+    // 删除产品图片
+    if ('${product.image || ''}') {
+        const imagePath = '${product.image || ''}'.split('/').slice(-2).join('/');
+        await supabase.storage.from('product-images').remove([imagePath]);
+    }
+    
+    // 删除产品数据
+    const { error } = await supabase.from('products').delete().eq('id', '${product.id}');
+    if (error) {
+        showToast('删除失败', 'error');
+        console.error(error);
+    } else {
+        showToast('删除成功');
+        loadProducts();
+    }
+    closeConfirm();
+})">
+    <i class="fa fa-trash mr-1"></i> 删除
+</button>
                     </div>
                     ` : ''}
                 </div>
@@ -1570,3 +1570,4 @@
     </script>
 </body>
 </html>
+
