@@ -1778,23 +1778,38 @@
 
         // 上传图片到Supabase Storage，返回图片URL
         async function uploadImageToSupabase(file) {
-            if (!file) return '';
-            
-            // 生成唯一文件名（避免重复）：产品ID_时间戳.扩展名
-            const productId = document.getElementById('product-id').value || Date.now();
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${productId}_${Date.now()}.${fileExt}`;
-            const filePath = fileName; // 正确：直接使用文件名，存储桶已通过from('product-images')指定
-            
-            // 上传文件
-            const { data, error } = await supabase
-                .storage
-                .from('product-images')
-                .upload(filePath, file, {
-                    cacheControl: '3600', // 缓存1小时
-                    upsert: true // 覆盖同名文件（编辑时）
-                });
-            
+  if (!file) return '';
+  
+  // 生成唯一文件名（避免重复）：产品ID_时间戳.扩展名
+  const productId = document.getElementById('product-id').value || Date.now();
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${productId}_${Date.now()}.${fileExt}`;
+  // 正确路径：直接使用文件名，存储桶已通过from('product-images')指定
+  const filePath = fileName; 
+  
+  // 上传文件
+  const { data, error } = await supabase
+    .storage
+    .from('product-images')
+    .upload(filePath, file, {
+      cacheControl: '3600', // 缓存1小时
+      upsert: true // 覆盖同名文件（编辑时）
+    });
+  
+  if (error) {
+    showToast('图片上传失败', 'error');
+    console.error('Upload image error:', error);
+    return '';
+  }
+  
+  // 获取公开访问URL
+  const { data: { publicUrl } } = supabase
+    .storage
+    .from('product-images')
+    .getPublicUrl(filePath);
+  
+  return publicUrl;
+}
             if (error) {
                 showToast('图片上传失败', 'error');
                 console.error('Upload image error:', error);
@@ -1812,4 +1827,5 @@
     </script>
 </body>
 </html>
+
 
