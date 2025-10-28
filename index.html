@@ -623,23 +623,43 @@
         }
 
         // 加载密码配置
-        async function loadPasswords() {
-            const { data } = await supabase
-                .from('settings')
-                .select('key, value')
-                .in('key', ['user_password', 'admin_password']);
-            
-            if (data && data.length > 0) {
-                data.forEach(item => {
-                    if (item.key === 'user_password') {
-                        passwords.user = item.value;
-                    } else if (item.key === 'admin_password') {
-                        passwords.admin = item.value;
-                    }
-                });
-            }
+        // 加载密码配置（添加兜底逻辑，确保登录可用）
+async function loadPasswords() {
+    try {
+        // 尝试从Supabase加载密码
+        const { data, error } = await supabase
+            .from('settings')
+            .select('key, value')
+            .in('key', ['user_password', 'admin_password']);
+        
+        // 情况1：查询出错（如表不存在、网络问题）
+        if (error) {
+            console.warn('Supabase查询密码失败，使用默认密码', error);
+            passwords = { user: 'user123', admin: 'admin123' };
+            return;
         }
-
+        
+        // 情况2：查询成功但无数据（首次使用，表为空）
+        if (!data || data.length === 0) {
+            console.log('未找到密码数据，使用默认密码');
+            passwords = { user: 'user123', admin: 'admin123' };
+            return;
+        }
+        
+        // 情况3：正常加载到数据
+        data.forEach(item => {
+            if (item.key === 'user_password') {
+                passwords.user = item.value || 'user123'; // 单个密码为空时兜底
+            } else if (item.key === 'admin_password') {
+                passwords.admin = item.value || 'admin123'; // 单个密码为空时兜底
+            }
+        });
+    } catch (err) {
+        // 捕获其他异常（如代码错误）
+        console.error('加载密码时发生异常，使用默认密码', err);
+        passwords = { user: 'user123', admin: 'admin123' };
+    }
+}
         // 设置数据同步监听
         function setupDataSync() {
             // 监听产品数据变化
@@ -1681,6 +1701,7 @@ function mapStatus(statusText) {
     </script>
 </body>
 </html>
+
 
 
 
