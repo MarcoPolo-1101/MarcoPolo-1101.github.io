@@ -1,3 +1,17 @@
+ function switchAuth(type) {
+            document.getElementById('auth-type').value = type;
+            if (type === 'user') {
+                document.getElementById('user-tab').classList.add('bg-primary', 'text-white');
+                document.getElementById('user-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                document.getElementById('admin-tab').classList.remove('bg-primary', 'text-white');
+                document.getElementById('admin-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+            } else {
+                document.getElementById('admin-tab').classList.add('bg-primary', 'text-white');
+                document.getElementById('admin-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                document.getElementById('user-tab').classList.remove('bg-primary', 'text-white');
+                document.getElementById('user-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+            }
+        }
 <!DOCTYPE html>
 <html lang="zh-CN" data-theme="light">
 <head>
@@ -1266,20 +1280,7 @@
         }
 
         // 切换认证类型
-        function switchAuth(type) {
-            document.getElementById('auth-type').value = type;
-            if (type === 'user') {
-                document.getElementById('user-tab').classList.add('bg-primary', 'text-white');
-                document.getElementById('user-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-                document.getElementById('admin-tab').classList.remove('bg-primary', 'text-white');
-                document.getElementById('admin-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            } else {
-                document.getElementById('admin-tab').classList.add('bg-primary', 'text-white');
-                document.getElementById('admin-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-                document.getElementById('user-tab').classList.remove('bg-primary', 'text-white');
-                document.getElementById('user-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            }
-        }
+       
 
         // 切换密码显示状态
         function togglePassword(id) {
@@ -1827,5 +1828,6 @@
     </script>
 </body>
 </html>
+
 
 
