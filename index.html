@@ -1567,7 +1567,102 @@
             
             return publicUrl;
         }
+        // 新增：创建隐藏的文件上传输入框（不影响原有UI）
+const importInput = document.createElement('input');
+importInput.type = 'file';
+importInput.accept = '.csv';
+importInput.style.display = 'none';
+document.body.appendChild(importInput);
+
+// 重写importData函数（替换原有提示逻辑，保留函数名以适配原有按钮点击）
+function importData() {
+    // 触发文件选择对话框
+    importInput.click();
+    
+    // 监听文件选择事件
+    importInput.onchange = async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // 验证文件格式
+        if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+            showToast('请上传CSV格式文件', 'error');
+            return;
+        }
+        
+        // 读取并解析CSV文件
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+            try {
+                const csvData = event.target.result;
+                const products = parseCsvToProducts(csvData);
+                
+                if (products.length === 0) {
+                    showToast('CSV文件中未找到有效数据', 'warning');
+                    return;
+                }
+                
+                // 批量插入数据到Supabase
+                const { error } = await supabase
+                    .from('products')
+                    .insert(products);
+                
+                if (error) throw error;
+                
+                // 刷新产品列表并提示成功
+                loadProducts();
+                showToast(`成功导入 ${products.length} 条产品数据`);
+            } catch (err) {
+                showToast('导入失败：' + err.message, 'error');
+                console.error('导入错误：', err);
+            }
+        };
+        reader.readAsText(file);
+    };
+}
+
+// 新增：CSV解析为产品数据数组（适配products表结构）
+function parseCsvToProducts(csv) {
+    const lines = csv.split('\n').map(line => line.trim()).filter(line => line);
+    if (lines.length < 2) return []; // 至少需要表头和一行数据
+    
+    // 解析表头（支持：名称,系列,尺寸,价格,状态）
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const requiredHeaders = ['名称', '系列', '尺寸', '价格', '状态'];
+    const hasRequired = requiredHeaders.every(h => headers.includes(h.toLowerCase()));
+    
+    if (!hasRequired) {
+        throw new Error('CSV文件必须包含：名称、系列、尺寸、价格、状态列');
+    }
+    
+    // 解析数据行
+    return lines.slice(1).map((line, index) => {
+        const values = line.split(',').map(v => v.trim());
+        const product = {
+            name: values[headers.indexOf('名称')] || `未命名产品${index+1}`,
+            series: values[headers.indexOf('系列')] || '未知系列',
+            size: values[headers.indexOf('尺寸')] || '未知尺寸',
+            price: parseFloat(values[headers.indexOf('价格')]) || 0,
+            status: mapStatus(values[headers.indexOf('状态')]) || 'onsale',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        return product;
+    });
+}
+
+// 新增：状态文本映射（CSV中的中文状态转数据库存储值）
+function mapStatus(statusText) {
+    const statusMap = {
+        '在售': 'onsale',
+        '已停产': 'discontinued',
+        '爆款': 'hot',
+        '特价': 'discount'
+    };
+    return statusMap[statusText] || null;
+}
     </script>
 </body>
 </html>
+
 
