@@ -624,12 +624,7 @@
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
                 // 新增：验证用户合法性
-                const validEmails = ['user@example.com', 'admin@example.com'];
-                if (!validEmails.includes(session.user.email)) {
-                    await supabase.auth.signOut();
-                    showToast('非法用户，已强制登出', 'error');
-                    return;
-                }
+              
                 
                 currentUser = session.user.email === 'admin@example.com' ? 'admin' : 'user';
                 await loadCustomOptions();
@@ -1957,3 +1952,4 @@
     </script>
 </body>
 </html>
+
