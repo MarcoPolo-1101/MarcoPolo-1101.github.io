@@ -1,21 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-CN" data-theme="light">
 <head>
-    <!-- 新增：资源预加载优化 -->
-    <link rel="preconnect" href="https://cdn.tailwindcss.com">
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" as="style">
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" as="script">
-    <!-- 新增：密码加密依赖 -->
-    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marco Polo速查</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome-awesome.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- 引入Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
@@ -70,24 +62,10 @@
             .upload-area {
                 @apply border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 transition-all hover:border-primary/50 dark:hover:border-primary/50;
             }
-            /* 新增：加载动画样式 */
-            .loader {
-                border-top-color: #2563eb;
-                animation: spinner 0.6s linear infinite;
-            }
-            @keyframes spinner {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
         }
     </style>
 </head>
 <body class="font-inter bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen transition-theme">
-    <!-- 新增：加载动画容器 -->
-    <div id="loading-spinner" class="fixed inset-0 bg-white/80 dark:bg-gray-900/80 z-40 flex items-center justify-center hidden">
-        <div class="loader rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-    </div>
-
     <!-- 登录页面 -->
     <div id="login-page" class="flex items-center justify-center min-h-screen p-4">
         <div class="w-full max-w-md">
@@ -214,48 +192,46 @@
                         </button>
                     </h2>
                     
-                    <!-- 产品系列筛选 - 新增编辑按钮 -->
+                    <!-- 产品系列筛选 -->
                     <div class="mb-4.5">
                         <label class="form-label">产品系列</label>
                         <div class="relative">
-                            <select id="series-filter" class="input-field appearance-none pr-8" onchange="debouncedApplyFilters()">
+                            <select id="series-filter" class="input-field appearance-none pr-8">
                                 <option value="">全部系列</option>
                             </select>
                             <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                                 <i class="fa fa-chevron-down text-xs"></i>
                             </div>
-                            <!-- 新增：编辑按钮 -->
-                            <button type="button" class="absolute right-10 top-1/2 -translate-y-1/2 text-primary hover:text-primary/80 transition-colors" onclick="editCustomOption('series')">
-                                <i class="fa fa-pencil"></i>
-                            </button>
                         </div>
-                        <div class="flex items-center mt-2" id="series-add-container" style="display: none;">
+                        <div class="flex items-center mt-2">
                             <input type="text" id="new-series" class="input-field text-sm w-full mr-2" placeholder="添加新系列">
                             <button class="btn-primary px-2 py-1 text-sm" onclick="addCustomOption('series')">
                                 <i class="fa fa-plus"></i>
                             </button>
+                            <button id="edit-series-btn" class="btn-secondary px-2 py-1 text-sm ml-1" onclick="openEditOptionsModal('series')" style="display: none;">
+                                <i class="fa fa-edit"></i>
+                            </button>
                         </div>
                     </div>
                     
-                    <!-- 尺寸规格筛选 - 新增编辑按钮 -->
+                    <!-- 尺寸规格筛选 -->
                     <div class="mb-4.5">
                         <label class="form-label">尺寸规格</label>
                         <div class="relative">
-                            <select id="size-filter" class="input-field appearance-none pr-8" onchange="debouncedApplyFilters()">
+                            <select id="size-filter" class="input-field appearance-none pr-8">
                                 <option value="">全部尺寸</option>
                             </select>
                             <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                                 <i class="fa fa-chevron-down text-xs"></i>
                             </div>
-                            <!-- 新增：编辑按钮 -->
-                            <button type="button" class="absolute right-10 top-1/2 -translate-y-1/2 text-primary hover:text-primary/80 transition-colors" onclick="editCustomOption('size')">
-                                <i class="fa fa-pencil"></i>
-                            </button>
                         </div>
-                        <div class="flex items-center mt-2" id="size-add-container" style="display: none;">
-                            <input type="text" id="new-size" class="input-field text-sm w-full mr-2" placeholder="添加新尺寸（如：3XL、42码）">
+                        <div class="flex items-center mt-2">
+                            <input type="text" id="new-size" class="input-field text-sm w-full mr-2" placeholder="添加新尺寸">
                             <button class="btn-primary px-2 py-1 text-sm" onclick="addCustomOption('size')">
                                 <i class="fa fa-plus"></i>
+                            </button>
+                            <button id="edit-size-btn" class="btn-secondary px-2 py-1 text-sm ml-1" onclick="openEditOptionsModal('size')" style="display: none;">
+                                <i class="fa fa-edit"></i>
                             </button>
                         </div>
                     </div>
@@ -264,9 +240,9 @@
                     <div class="mb-4.5">
                         <label class="form-label">价格范围</label>
                         <div class="flex gap-2">
-                            <input type="number" id="min-price" class="input-field text-sm" placeholder="最低" oninput="debouncedApplyFilters()">
+                            <input type="number" id="min-price" class="input-field text-sm" placeholder="最低">
                             <span class="self-center">-</span>
-                            <input type="number" id="max-price" class="input-field text-sm" placeholder="最高" oninput="debouncedApplyFilters()">
+                            <input type="number" id="max-price" class="input-field text-sm" placeholder="最高">
                         </div>
                     </div>
                     
@@ -275,19 +251,19 @@
                         <label class="form-label">产品状态</label>
                         <div class="flex flex-wrap gap-2">
                             <label class="flex items-center space-x-1 cursor-pointer">
-                                <input type="checkbox" value="onsale" class="form-checkbox h-4 w-4 text-primary rounded" checked onchange="debouncedApplyFilters()">
+                                <input type="checkbox" value="onsale" class="form-checkbox h-4 w-4 text-primary rounded" checked>
                                 <span>在售</span>
                             </label>
                             <label class="flex items-center space-x-1 cursor-pointer">
-                                <input type="checkbox" value="discontinued" class="form-checkbox h-4 w-4 text-primary rounded" checked onchange="debouncedApplyFilters()">
+                                <input type="checkbox" value="discontinued" class="form-checkbox h-4 w-4 text-primary rounded" checked>
                                 <span>已停产</span>
                             </label>
                             <label class="flex items-center space-x-1 cursor-pointer">
-                                <input type="checkbox" value="hot" class="form-checkbox h-4 w-4 text-primary rounded" checked onchange="debouncedApplyFilters()">
+                                <input type="checkbox" value="hot" class="form-checkbox h-4 w-4 text-primary rounded" checked>
                                 <span>爆款</span>
                             </label>
                             <label class="flex items-center space-x-1 cursor-pointer">
-                                <input type="checkbox" value="discount" class="form-checkbox h-4 w-4 text-primary rounded" checked onchange="debouncedApplyFilters()">
+                                <input type="checkbox" value="discount" class="form-checkbox h-4 w-4 text-primary rounded" checked>
                                 <span>特价</span>
                             </label>
                         </div>
@@ -348,13 +324,6 @@
                             <p>暂无产品数据</p>
                             <p id="empty-hint" class="text-sm mt-1 hidden">请添加产品或导入数据</p>
                         </div>
-                    </div>
-
-                    <!-- 新增：分页控件 -->
-                    <div id="pagination" class="flex justify-center mt-6 hidden">
-                        <button id="prev-page" class="btn-secondary mr-2" onclick="changePage(-1)">上一页</button>
-                        <span id="page-info" class="self-center px-2">第1页 / 共0页</span>
-                        <button id="next-page" class="btn-secondary ml-2" onclick="changePage(1)">下一页</button>
                     </div>
                 </div>
             </div>
@@ -457,6 +426,39 @@
                     <button type="submit" class="btn-primary">保存</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 选项编辑模态框 -->
+    <div id="edit-options-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto transition-theme">
+            <div class="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+                <h2 id="edit-modal-title" class="text-lg font-bold">编辑产品系列</h2>
+                <button class="text-gray-500 hover:text-danger transition-colors" onclick="document.getElementById('edit-options-modal').classList.add('hidden')">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <input type="hidden" id="edit-option-type" value="">
+                <div class="mb-4">
+                    <label class="form-label">添加新选项</label>
+                    <div class="flex">
+                        <input type="text" id="edit-new-option" class="input-field mr-2" placeholder="输入新选项">
+                        <button class="btn-primary" onclick="addOptionFromEditModal()">
+                            <i class="fa fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <h3 class="font-medium mb-2">现有选项</h3>
+                <div id="options-list" class="space-y-2 max-h-60 overflow-y-auto pr-2">
+                    <!-- 选项列表将动态生成 -->
+                </div>
+                
+                <div class="mt-6">
+                    <button class="btn-secondary w-full" onclick="document.getElementById('edit-options-modal').classList.add('hidden')">关闭</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -564,49 +566,21 @@
         <span id="toast-message"></span>
     </div>
 
-    <!-- 新增：编辑自定义选项弹窗 -->
-    <div id="edit-option-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md transition-theme">
-            <div class="p-4 border-b dark:border-gray-700 flex items-center justify-between">
-                <h2 class="text-lg font-bold" id="edit-modal-title">编辑产品系列</h2>
-                <button class="text-gray-500 hover:text-danger transition-colors" onclick="document.getElementById('edit-option-modal').classList.add('hidden')">
-                    <i class="fa fa-times"></i>
-                </button>
-            </div>
-            <form id="edit-option-form" onsubmit="saveEditedOption(event)" class="p-4">
-                <input type="hidden" id="edit-option-type">
-                <input type="hidden" id="edit-option-old-value">
-                <div class="mb-4.5">
-                    <label for="edit-option-new-value" class="form-label">新名称</label>
-                    <input type="text" id="edit-option-new-value" class="input-field" placeholder="输入新名称" required>
-                </div>
-                <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" class="btn-secondary" onclick="document.getElementById('edit-option-modal').classList.add('hidden')">取消</button>
-                    <button type="submit" class="btn-primary">保存修改</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
         // 全局变量初始化
         let products = [];
         let customSeries = [];
-        let customSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '40码', '41码', '42码', '43码'];
+        let customSizes = [];
         let passwords = { user: '', admin: '' };
         let currentUser = '';
         let dataSyncListener = null;
         let seriesChart = null;
-        let currentImageFile = null;
-        let currentImageUrl = '';
-        const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+        // 新增图片相关变量
+        let currentImageFile = null; // 当前选中的图片文件
+        let currentImageUrl = '';    // 当前产品的图片URL（编辑时用）
+        const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 图片最大限制：5MB
         
-        // 新增：分页相关变量
-        let page = 1;
-        const pageSize = 10;
-        let totalPages = 1;
-        
-        // 初始化Supabase客户端
+        // 初始化Supabase客户端 - 请替换为你的项目信息
         const supabaseUrl = 'https://xntvwcweuqnqpgnmvbzq.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhudHZ3Y3dldXFucXBnbm12YnpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzODkyOTAsImV4cCI6MjA3Njk2NTI5MH0.W2_akOurOxlp1quO5uDFnc8MCTtBxrVaBhiHIxu041s';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -623,9 +597,6 @@
             // 检查登录状态
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-                // 新增：验证用户合法性
-              
-                
                 currentUser = session.user.email === 'admin@example.com' ? 'admin' : 'user';
                 await loadCustomOptions();
                 await loadProducts();
@@ -636,109 +607,81 @@
             }
         };
 
-        // 加载产品数据（新增分页功能）
+        // 加载产品数据
         async function loadProducts() {
-            showLoading(); // 新增：显示加载动画
             try {
-                const { data, error, count } = await supabase
+                const { data, error } = await supabase
                     .from('products')
-                    .select('*', { count: 'exact' })
-                    .order('created_at', { ascending: false })
-                    .range((page-1)*pageSize, page*pageSize - 1); // 新增：分页范围
+                    .select('*')
+                    .order('created_at', { ascending: false });
 
                 if (error) throw error;
                 
                 if (data) {
                     products = data;
-                    totalPages = Math.ceil((count || 0) / pageSize);
                     renderProductList();
                     updateStatistics();
                     updateCharts();
-                    updatePagination(); // 新增：更新分页控件
                 }
             } catch (error) {
                 showToast('加载产品数据失败', 'error');
                 console.error('Error loading products:', error);
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
             }
         }
 
         // 从Supabase加载自定义选项
         async function loadCustomOptions() {
-            showLoading(); // 新增：显示加载动画
-            try {
-                // 加载产品系列
-                const { data: seriesData } = await supabase
-                    .from('custom_options')
-                    .select('value')
-                    .eq('type', 'series');
-                
-                // 加载尺寸规格
-                const { data: sizeData } = await supabase
-                    .from('custom_options')
-                    .select('value')
-                    .eq('type', 'size');
-                
-                if (seriesData && seriesData.length > 0) {
-                    customSeries = seriesData.map(item => item.value);
-                }
-                
-                // 合并数据库尺寸和默认尺寸
-                if (sizeData && sizeData.length > 0) {
-                    const dbSizes = sizeData.map(item => item.value);
-                    customSizes = [...new Set([...customSizes, ...dbSizes])];
-                } else {
-                    // 初始化默认尺寸到数据库
-                    const defaultSizes = customSizes;
-                    for (const size of defaultSizes) {
-                        await supabase
-                            .from('custom_options')
-                            .insert({ type: 'size', value: size })
-                            .eq('type', 'size')
-                            .eq('value', size);
-                    }
-                }
-                
-                // 更新下拉菜单
-                updateSelectOptions('series-filter', customSeries);
-                updateSelectOptions('product-series', customSeries);
-                updateSelectOptions('size-filter', customSizes);
-                updateSelectOptions('product-size', customSizes);
-                
-                // 更新设置页面的选项列表
-                renderCustomOptionsLists();
-            } catch (error) {
-                showToast('加载选项数据失败', 'error');
-                console.error('Error loading options:', error);
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
+            // 加载产品系列
+            const { data: seriesData } = await supabase
+                .from('custom_options')
+                .select('value')
+                .eq('type', 'series');
+            
+            // 加载尺寸规格
+            const { data: sizeData } = await supabase
+                .from('custom_options')
+                .select('value')
+                .eq('type', 'size');
+            
+            if (seriesData && seriesData.length > 0) {
+                customSeries = seriesData.map(item => item.value);
+            }
+            
+            if (sizeData && sizeData.length > 0) {
+                customSizes = sizeData.map(item => item.value);
+            }
+            
+            // 更新下拉菜单
+            updateSelectOptions('series-filter', customSeries);
+            updateSelectOptions('product-series', customSeries);
+            updateSelectOptions('size-filter', customSizes);
+            updateSelectOptions('product-size', customSizes);
+            
+            // 更新设置页面的选项列表
+            renderCustomOptionsLists();
+            
+            // 显示编辑按钮（仅管理员）
+            if (currentUser === 'admin') {
+                document.getElementById('edit-series-btn').style.display = 'inline-block';
+                document.getElementById('edit-size-btn').style.display = 'inline-block';
             }
         }
 
         // 加载密码配置
         async function loadPasswords() {
-            showLoading(); // 新增：显示加载动画
-            try {
-                const { data } = await supabase
-                    .from('settings')
-                    .select('key, value')
-                    .in('key', ['user_password', 'admin_password']);
-                
-                if (data && data.length > 0) {
-                    data.forEach(item => {
-                        if (item.key === 'user_password') {
-                            passwords.user = item.value;
-                        } else if (item.key === 'admin_password') {
-                            passwords.admin = item.value;
-                        }
-                    });
-                }
-            } catch (error) {
-                showToast('加载密码配置失败', 'error');
-                console.error('Error loading passwords:', error);
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
+            const { data } = await supabase
+                .from('settings')
+                .select('key, value')
+                .in('key', ['user_password', 'admin_password']);
+            
+            if (data && data.length > 0) {
+                data.forEach(item => {
+                    if (item.key === 'user_password') {
+                        passwords.user = item.value;
+                    } else if (item.key === 'admin_password') {
+                        passwords.admin = item.value;
+                    }
+                });
             }
         }
 
@@ -752,7 +695,7 @@
                     { event: '*', schema: 'public', table: 'products' },
                     (payload) => {
                         console.log('Product change detected:', payload);
-                        loadProducts();
+                        loadProducts(); // 重新加载产品数据
                     }
                 )
                 .subscribe();
@@ -765,101 +708,240 @@
                     { event: '*', schema: 'public', table: 'custom_options' },
                     (payload) => {
                         console.log('Custom option change detected:', payload);
-                        loadCustomOptions();
+                        loadCustomOptions(); // 重新加载自定义选项
                     }
                 )
                 .subscribe();
                 
+            // 存储订阅以便后续关闭
             dataSyncListener = { productsSubscription, optionsSubscription };
         }
 
-        // 处理登录（新增密码加密验证）
+        // 处理登录
         async function handleLogin(event) {
             event.preventDefault();
-            showLoading(); // 新增：显示加载动画
             
-            try {
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                const authType = document.getElementById('auth-type').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const authType = document.getElementById('auth-type').value;
+            
+            // 简单验证
+            if (authType === 'user' && password === passwords.user) {
+                // 普通用户登录
+                const { error } = await supabase.auth.signInWithPassword({
+                    email: 'user@example.com',
+                    password: 'userpassword' // 实际应用中应使用更安全的认证方式
+                });
                 
-                // 新增：密码加密验证
-                const encryptedPassword = hashPassword(password);
-                
-                if ((authType === 'user' && encryptedPassword !== passwords.user) || 
-                    (authType === 'admin' && encryptedPassword !== passwords.admin)) {
-                    document.getElementById('login-error').classList.remove('hidden');
-                    return;
+                if (!error) {
+                    currentUser = 'user';
+                    await loadCustomOptions();
+                    await loadProducts();
+                    setupDataSync();
+                    showAppPage();
+                } else {
+                    showLoginError();
                 }
+            } else if (authType === 'admin' && password === passwords.admin) {
+                // 管理员登录
+                const { error } = await supabase.auth.signInWithPassword({
+                    email: 'admin@example.com',
+                    password: 'adminpassword' // 实际应用中应使用更安全的认证方式
+                });
                 
-                // 登录成功，更新用户角色
-                currentUser = authType;
-                await loadCustomOptions();
-                await loadProducts();
-                setupDataSync();
-                showAppPage();
-                showToast('登录成功');
-            } catch (error) {
-                showToast('登录失败', 'error');
-                console.error('Login error:', error);
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
+                if (!error) {
+                    currentUser = 'admin';
+                    await loadCustomOptions();
+                    await loadProducts();
+                    setupDataSync();
+                    showAppPage();
+                } else {
+                    showLoginError();
+                }
+            } else {
+                showLoginError();
             }
         }
 
-        // 处理登出
-        async function handleLogout() {
-            showLoading(); // 新增：显示加载动画
-            try {
-                // 关闭数据同步监听
-                if (dataSyncListener) {
-                    await supabase.removeChannel(dataSyncListener.productsSubscription);
-                    await supabase.removeChannel(dataSyncListener.optionsSubscription);
-                }
-                
-                document.getElementById('login-page').classList.remove('hidden');
-                document.getElementById('app-page').classList.add('hidden');
-                showToast('已成功退出登录');
-            } catch (error) {
-                showToast('登出失败', 'error');
-                console.error('Logout error:', error);
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
+        // 显示登录错误
+        function showLoginError() {
+            const errorEl = document.getElementById('login-error');
+            errorEl.classList.remove('hidden');
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                errorEl.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 显示应用页面
+        function showAppPage() {
+            document.getElementById('login-page').classList.add('hidden');
+            document.getElementById('app-page').classList.remove('hidden');
+            
+            // 设置用户角色显示
+            document.getElementById('user-role').textContent = currentUser === 'admin' ? '管理员' : '普通用户';
+            
+            // 管理员功能显示控制
+            if (currentUser === 'admin') {
+                document.getElementById('action-bar').style.display = 'flex';
+                document.getElementById('settings-btn').style.display = 'block';
+                document.getElementById('admin-help').classList.remove('hidden');
+                document.getElementById('empty-hint').classList.remove('hidden');
             }
+        }
+
+        // 切换身份（用户/管理员）
+        function switchAuth(type) {
+            const userTab = document.getElementById('user-tab');
+            const adminTab = document.getElementById('admin-tab');
+            const authTypeInput = document.getElementById('auth-type');
+            
+            if (type === 'user') {
+                userTab.classList.add('bg-primary', 'text-white');
+                userTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                adminTab.classList.remove('bg-primary', 'text-white');
+                adminTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                authTypeInput.value = 'user';
+            } else {
+                adminTab.classList.add('bg-primary', 'text-white');
+                adminTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                userTab.classList.remove('bg-primary', 'text-white');
+                userTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                authTypeInput.value = 'admin';
+            }
+        }
+
+        // 切换密码显示状态
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const icon = field.nextElementSibling.querySelector('i');
+            
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            } else {
+                field.type = 'password';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            }
+        }
+
+        // 切换主题
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+        }
+
+        // 打开产品编辑模态框
+        function openProductModal(productId = null) {
+            const modal = document.getElementById('product-modal');
+            const title = document.getElementById('modal-title');
+            const form = document.getElementById('product-form');
+            const productIdInput = document.getElementById('product-id');
+            
+            // 重置表单
+            form.reset();
+            document.getElementById('image-preview').classList.add('hidden');
+            document.getElementById('image-placeholder').classList.remove('hidden');
+            document.getElementById('delete-image').classList.add('hidden');
+            currentImageFile = null;
+            currentImageUrl = '';
+            
+            if (productId) {
+                // 编辑现有产品
+                title.textContent = '编辑产品';
+                const product = products.find(p => p.id === productId);
+                if (product) {
+                    productIdInput.value = product.id;
+                    document.getElementById('product-name').value = product.name;
+                    document.getElementById('product-series').value = product.series;
+                    document.getElementById('product-size').value = product.size;
+                    document.getElementById('product-price').value = product.price;
+                    document.getElementById('product-status').value = product.status;
+                    
+                    // 显示图片
+                    if (product.image_url) {
+                        currentImageUrl = product.image_url;
+                        const imgPreview = document.getElementById('image-preview');
+                        imgPreview.src = product.image_url;
+                        imgPreview.classList.remove('hidden');
+                        document.getElementById('image-placeholder').classList.add('hidden');
+                        document.getElementById('delete-image').classList.remove('hidden');
+                    }
+                }
+            } else {
+                // 添加新产品
+                title.textContent = '添加产品';
+                productIdInput.value = '';
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        // 关闭产品编辑模态框
+        function closeProductModal() {
+            document.getElementById('product-modal').classList.add('hidden');
         }
 
         // 保存产品
         async function saveProduct(event) {
             event.preventDefault();
-            showLoading(); // 新增：显示加载动画
+            
+            const productId = document.getElementById('product-id').value;
+            const name = document.getElementById('product-name').value;
+            const series = document.getElementById('product-series').value;
+            const size = document.getElementById('product-size').value;
+            const price = parseFloat(document.getElementById('product-price').value);
+            const status = document.getElementById('product-status').value;
+            
+            // 构建产品数据
+            const productData = {
+                name,
+                series,
+                size,
+                price,
+                status,
+                updated_at: new Date().toISOString()
+            };
+            
+            // 如果是新产品，添加创建时间
+            if (!productId) {
+                productData.created_at = new Date().toISOString();
+            }
             
             try {
-                const productId = document.getElementById('product-id').value;
-                const name = document.getElementById('product-name').value;
-                const series = document.getElementById('product-series').value;
-                const size = document.getElementById('product-size').value;
-                const price = parseFloat(document.getElementById('product-price').value);
-                const status = document.getElementById('product-status').value;
-                
-                // 上传图片
-                let imageUrl = currentImageUrl;
+                // 处理图片上传
                 if (currentImageFile) {
-                    imageUrl = await uploadImageToSupabase(currentImageFile);
-                    if (!imageUrl && currentImageFile) return;
+                    // 生成唯一文件名
+                    const fileName = `${Date.now()}-${currentImageFile.name.replace(/\s+/g, '-')}`;
+                    
+                    // 上传图片到Supabase Storage
+                    const { data: uploadData, error: uploadError } = await supabase
+                        .storage
+                        .from('product-images')
+                        .upload(fileName, currentImageFile);
+                    
+                    if (uploadError) throw uploadError;
+                    
+                    // 获取图片URL
+                    const { data: urlData } = supabase
+                        .storage
+                        .from('product-images')
+                        .getPublicUrl(fileName);
+                    
+                    productData.image_url = urlData.publicUrl;
+                } else if (currentImageUrl && !productId) {
+                    // 编辑时保留现有图片
+                    productData.image_url = currentImageUrl;
                 }
                 
-                const productData = {
-                    name,
-                    series,
-                    size,
-                    price,
-                    status,
-                    image: imageUrl,
-                    updated_at: new Date().toISOString()
-                };
-                
                 let result;
-                
                 if (productId) {
                     // 更新现有产品
                     result = await supabase
@@ -870,545 +952,236 @@
                     // 添加新产品
                     result = await supabase
                         .from('products')
-                        .insert({
-                            ...productData,
-                            created_at: new Date().toISOString()
-                        });
+                        .insert([productData]);
                 }
                 
-                if (result.error) {
-                    showToast('保存产品失败', 'error');
-                    console.error('Error saving product:', result.error);
-                    return;
-                }
+                if (result.error) throw result.error;
                 
-                // 保存成功后，清空图片状态
-                currentImageFile = null;
-                currentImageUrl = '';
+                // 关闭模态框并显示提示
                 closeProductModal();
-                showToast(productId ? '产品更新成功' : '产品添加成功');
+                showToast(productId ? '产品更新成功' : '产品添加成功', 'success');
             } catch (error) {
+                console.error('Error saving product:', error);
                 showToast('保存产品失败', 'error');
-                console.error('Save product error:', error);
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
             }
         }
 
-        // 添加自定义选项
-        async function addCustomOption(type) {
-            showLoading(); // 新增：显示加载动画
-            try {
-                const inputId = `new-${type}`;
-                const value = document.getElementById(inputId).value.trim();
-                
-                if (!value) return;
-                
-                // 检查是否已存在
-                const existingOptions = type === 'series' ? customSeries : customSizes;
-                if (existingOptions.includes(value)) {
-                    showToast('该选项已存在', 'warning');
-                    return;
-                }
-                
-                // 保存到Supabase
-                const { error } = await supabase
-                    .from('custom_options')
-                    .insert({
-                        type,
-                        value
-                    });
-                
-                if (error) {
-                    showToast('添加失败', 'error');
-                    console.error('Error adding custom option:', error);
-                    return;
-                }
-                
-                // 清空输入框
-                document.getElementById(inputId).value = '';
-                showToast('添加成功');
-            } catch (error) {
-                showToast('添加选项失败', 'error');
-                console.error('Add option error:', error);
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
+        // 处理本地上传图片
+        function handleLocalUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleImageFile(file);
             }
+            // 重置input值，以便可以重复选择同一文件
+            event.target.value = '';
         }
 
-        // 保存密码修改（新增密码加密存储）
-        async function savePasswords() {
-            showLoading(); // 新增：显示加载动画
-            try {
-                const userPassword = document.getElementById('user-password').value;
-                const userPasswordConfirm = document.getElementById('user-password-confirm').value;
-                const adminPassword = document.getElementById('admin-password').value;
-                const adminPasswordConfirm = document.getElementById('admin-password-confirm').value;
-                
-                // 验证用户密码
-                if (userPassword && userPassword !== userPasswordConfirm) {
-                    showToast('普通用户密码不一致', 'error');
-                    return;
-                }
-                
-                // 验证管理员密码
-                if (adminPassword && adminPassword !== adminPasswordConfirm) {
-                    showToast('管理员密码不一致', 'error');
-                    return;
-                }
-                
-                // 保存密码
-                const updates = [];
-                
-                if (userPassword) {
-                    updates.push({
-                        key: 'user_password',
-                        value: hashPassword(userPassword) // 新增：密码加密
-                    });
-                }
-                
-                if (adminPassword) {
-                    updates.push({
-                        key: 'admin_password',
-                        value: hashPassword(adminPassword) // 新增：密码加密
-                    });
-                }
-                
-                if (updates.length > 0) {
-                    const { error } = await supabase
-                        .from('settings')
-                        .upsert(updates);
-                    
-                    if (error) {
-                        showToast('保存密码失败', 'error');
-                        console.error('Error saving passwords:', error);
-                        return;
-                    }
-                    
-                    // 更新本地密码缓存
-                    updates.forEach(update => {
-                        if (update.key === 'user_password') {
-                            passwords.user = update.value;
-                        } else if (update.key === 'admin_password') {
-                            passwords.admin = update.value;
-                        }
-                    });
-                    
-                    // 清空输入框
-                    document.getElementById('user-password').value = '';
-                    document.getElementById('user-password-confirm').value = '';
-                    document.getElementById('admin-password').value = '';
-                    document.getElementById('admin-password-confirm').value = '';
-                    
-                    showToast('密码修改成功');
-                }
-            } catch (error) {
-                showToast('保存密码失败', 'error');
-                console.error('Save passwords error:', error);
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
+        // 处理相机拍摄图片
+        function handleCameraUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleImageFile(file);
             }
+            // 重置input值
+            event.target.value = '';
         }
 
-        // 清除所有产品数据
-        async function clearAllData() {
-            showLoading(); // 新增：显示加载动画
-            try {
-                // 先删除所有图片
-                for (const product of products) {
-                    if (product.image) {
-                        const imagePath = product.image.split('/').slice(-2).join('/');
-                        await supabase.storage.from('product-images').remove([imagePath]);
-                    }
-                }
-                
-                // 再删除产品数据
-                const { error } = await supabase
-                    .from('products')
-                    .delete()
-                    .neq('id', '');
-                
-                if (error) {
-                    showToast('清除数据失败', 'error');
-                    console.error('Error clearing data:', error);
-                    return;
-                }
-                
-                products = [];
-                renderProductList();
-                updateStatistics();
-                updateCharts();
-                closeConfirm();
-                showToast('所有产品数据已清除');
-            } catch (error) {
-                showToast('清除数据失败', 'error');
-                console.error('Clear data error:', error);
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
-            }
-        }
-
-        // 导入演示数据
-        async function importDemoData() {
-            showLoading(); // 新增：显示加载动画
-            try {
-                const demoProducts = [
-                    {
-                        name: '基础款T恤',
-                        series: '基础款',
-                        size: 'M',
-                        price: 99.99,
-                        status: 'onsale',
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    },
-                    {
-                        name: '旗舰款夹克',
-                        series: '旗舰款',
-                        size: 'L',
-                        price: 399.99,
-                        status: 'hot',
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    },
-                    {
-                        name: '进阶款裤子',
-                        series: '进阶款',
-                        size: 'XL',
-                        price: 199.99,
-                        status: 'discount',
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    }
-                ];
-                
-                // 先添加演示系列和尺寸
-                const demoSeries = [...new Set(demoProducts.map(p => p.series))];
-                const demoSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '40码', '41码', '42码'];
-                
-                for (const series of demoSeries) {
-                    if (!customSeries.includes(series)) {
-                        await supabase.from('custom_options').insert({ type: 'series', value: series });
-                    }
-                }
-                
-                for (const size of demoSizes) {
-                    if (!customSizes.includes(size)) {
-                        await supabase.from('custom_options').insert({ type: 'size', value: size });
-                    }
-                }
-                
-                // 导入产品
-                const { error } = await supabase
-                    .from('products')
-                    .insert(demoProducts);
-                
-                if (error) {
-                    showToast('导入演示数据失败', 'error');
-                    console.error('Error importing demo data:', error);
-                    return;
-                }
-                
-                // 刷新数据
-                await loadCustomOptions();
-                await loadProducts();
-                showToast('演示数据导入成功');
-            } catch (error) {
-                showToast('导入演示数据失败', 'error');
-                console.error('Import demo data error:', error);
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
-            }
-        }
-
-        // 显示提示消息
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const icon = document.getElementById('toast-icon');
-            const text = document.getElementById('toast-message');
-            
-            if (type === 'success') {
-                toast.className = 'fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 bg-success text-white';
-                icon.className = 'fa fa-check-circle mr-2';
-            } else if (type === 'error') {
-                toast.className = 'fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 bg-danger text-white';
-                icon.className = 'fa fa-exclamation-circle mr-2';
-            } else if (type === 'warning') {
-                toast.className = 'fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 bg-warning text-white';
-                icon.className = 'fa fa-exclamation-triangle mr-2';
+        // 处理图片文件
+        function handleImageFile(file) {
+            // 检查文件类型
+            if (!file.type.match('image.*')) {
+                showToast('请选择图片文件', 'error');
+                return;
             }
             
-            text.textContent = message;
-            toast.classList.remove('translate-x-full', 'hidden');
-            
-            setTimeout(() => {
-                toast.classList.add('translate-x-full');
-            }, 3000);
-        }
-
-        // 显示应用页面
-        function showAppPage() {
-            document.getElementById('login-page').classList.add('hidden');
-            document.getElementById('app-page').classList.remove('hidden');
-            
-            // 更新用户角色显示
-            document.getElementById('user-role').textContent = currentUser === 'admin' ? '管理员' : '普通用户';
-            
-            // 显示管理员功能
-            if (currentUser === 'admin') {
-                document.getElementById('action-bar').style.display = 'flex';
-                document.getElementById('settings-btn').style.display = 'block';
-                document.getElementById('series-add-container').style.display = 'flex';
-                document.getElementById('size-add-container').style.display = 'flex';
-                document.getElementById('admin-help').classList.remove('hidden');
-                document.getElementById('empty-hint').classList.remove('hidden');
-            }
-        }
-
-        // 更新下拉选项
-        function updateSelectOptions(selectId, options) {
-            const select = document.getElementById(selectId);
-            if (!select) return;
-            
-            const currentValue = select.value;
-            while (select.options.length > 1) {
-                select.remove(1);
+            // 检查文件大小
+            if (file.size > MAX_IMAGE_SIZE) {
+                showToast('图片大小不能超过5MB', 'error');
+                return;
             }
             
-            options.forEach(option => {
-                const optionElement = document.createElement('option');
-                optionElement.value = option;
-                optionElement.textContent = option;
-                select.appendChild(optionElement);
-            });
+            // 预览图片
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imgPreview = document.getElementById('image-preview');
+                imgPreview.src = e.target.result;
+                imgPreview.classList.remove('hidden');
+                document.getElementById('image-placeholder').classList.add('hidden');
+                document.getElementById('delete-image').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
             
-            if (currentValue && options.includes(currentValue)) {
-                select.value = currentValue;
-            }
+            currentImageFile = file;
         }
 
-        // 切换认证类型
-        function switchAuth(type) {
-            document.getElementById('auth-type').value = type;
-            if (type === 'user') {
-                document.getElementById('user-tab').classList.add('bg-primary', 'text-white');
-                document.getElementById('user-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-                document.getElementById('admin-tab').classList.remove('bg-primary', 'text-white');
-                document.getElementById('admin-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            } else {
-                document.getElementById('admin-tab').classList.add('bg-primary', 'text-white');
-                document.getElementById('admin-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-                document.getElementById('user-tab').classList.remove('bg-primary', 'text-white');
-                document.getElementById('user-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            }
-        }
-
-        // 切换密码显示状态
-        function togglePassword(id) {
-            const input = document.getElementById(id);
-            const icon = document.querySelector(`button[onclick="togglePassword('${id}')"] i`);
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            } else {
-                input.type = 'password';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            }
-        }
-
-        // 切换主题
-        function toggleTheme() {
-            const html = document.documentElement;
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                localStorage.theme = 'light';
-            } else {
-                html.classList.add('dark');
-                localStorage.theme = 'dark';
-            }
-        }
-
-        // 打开产品模态框
-        function openProductModal(product = null) {
-            const modal = document.getElementById('product-modal');
-            const title = document.getElementById('modal-title');
-            const form = document.getElementById('product-form');
-            
-            // 重置图片预览
-            const previewImg = document.getElementById('image-preview');
-            const placeholder = document.getElementById('image-placeholder');
-            const deleteBtn = document.getElementById('delete-image');
-            const uploadHint = document.getElementById('upload-hint');
-            
-            previewImg.src = '';
-            previewImg.classList.add('hidden');
-            placeholder.classList.remove('hidden');
-            deleteBtn.classList.add('hidden');
-            uploadHint.classList.add('hidden');
+        // 删除产品图片
+        function deleteProductImage() {
+            document.getElementById('image-preview').classList.add('hidden');
+            document.getElementById('image-placeholder').classList.remove('hidden');
+            document.getElementById('delete-image').classList.add('hidden');
             currentImageFile = null;
             currentImageUrl = '';
-            
-            if (product) {
-                title.textContent = '编辑产品';
-                document.getElementById('product-id').value = product.id;
-                document.getElementById('product-name').value = product.name;
-                document.getElementById('product-series').value = product.series;
-                document.getElementById('product-size').value = product.size;
-                document.getElementById('product-price').value = product.price;
-                document.getElementById('product-status').value = product.status;
-                
-                if (product.image) {
-                    currentImageUrl = product.image;
-                    showImagePreview(product.image);
-                }
-            } else {
-                title.textContent = '添加产品';
-                form.reset();
-                document.getElementById('product-id').value = '';
-            }
-            
-            modal.classList.remove('hidden');
         }
 
-        // 关闭产品模态框
-        function closeProductModal() {
-            document.getElementById('product-modal').classList.add('hidden');
-        }
-
-        // 渲染产品列表（新增图片懒加载）
-        function renderProductList() {
-            const container = document.getElementById('product-list');
-            if (!container) return;
+        // 渲染产品列表
+        function renderProductList(filteredProducts = null) {
+            const productListEl = document.getElementById('product-list');
+            const productsToRender = filteredProducts || products;
             
-            const filteredProducts = applyFilters();
-            
-            if (filteredProducts.length === 0) {
-                container.innerHTML = `
+            if (productsToRender.length === 0) {
+                productListEl.innerHTML = `
                     <div class="col-span-full text-center py-10 text-secondary dark:text-gray-400">
-                        <i class="fa fa-search text-4xl mb-2"></i>
-                        <p>没有找到匹配的产品</p>
-                        ${currentUser === 'admin' ? '<p class="text-sm mt-1">请尝试调整筛选条件或添加新产品</p>' : ''}
+                        <i class="fa fa-folder-open-o text-4xl mb-2"></i>
+                        <p>暂无产品数据</p>
+                        <p id="empty-hint" class="text-sm mt-1 ${currentUser === 'admin' ? '' : 'hidden'}">请添加产品或导入数据</p>
                     </div>
                 `;
                 return;
             }
             
-            // 渲染产品卡片（图片添加懒加载属性）
-            container.innerHTML = filteredProducts.map(product => `
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 card-hover transition-theme">
-                    <!-- 产品图片（新增loading="lazy"） -->
-                    <div class="w-full h-40 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-3">
-                        ${product.image ? 
-                            `<img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover" loading="lazy">` : 
-                            `<div class="w-full h-full flex items-center justify-center text-gray-400">
-                                <i class="fa fa-picture-o text-3xl"></i>
-                            </div>`
-                        }
+            // 根据当前视图模式渲染
+            const viewMode = document.getElementById('grid-view').classList.contains('bg-primary') ? 'grid' : 'list';
+            
+            productListEl.innerHTML = '';
+            
+            productsToRender.forEach(product => {
+                const productEl = document.createElement('div');
+                productEl.className = `bg-white dark:bg-gray-800 rounded-xl shadow p-4 transition-theme card-hover ${viewMode === 'list' ? 'col-span-full flex gap-4' : ''}`;
+                
+                // 状态样式映射
+                const statusStyles = {
+                    'onsale': 'bg-success/10 text-success',
+                    'discontinued': 'bg-danger/10 text-danger',
+                    'hot': 'bg-warning/10 text-warning',
+                    'discount': 'bg-primary/10 text-primary'
+                };
+                
+                // 状态文本映射
+                const statusTexts = {
+                    'onsale': '在售',
+                    'discontinued': '已停产',
+                    'hot': '爆款',
+                    'discount': '特价'
+                };
+                
+                productEl.innerHTML = `
+                    <div class="${viewMode === 'list' ? 'w-1/4' : ''}">
+                        <div class="w-full h-40 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-3">
+                            ${product.image_url ? 
+                                `<img src="${product.image_url}" alt="${product.name}" class="w-full h-full object-cover">` : 
+                                `<div class="w-full h-full flex items-center justify-center text-gray-400">
+                                    <i class="fa fa-picture-o text-3xl"></i>
+                                </div>`
+                            }
+                        </div>
                     </div>
+                    <div class="${viewMode === 'list' ? 'w-3/4' : ''}">
+                        <div class="flex justify-between items-start mb-1">
+                            <h3 class="font-semibold ${viewMode === 'list' ? 'text-lg' : ''}">${product.name}</h3>
+                            <span class="badge ${statusStyles[product.status]}">${statusTexts[product.status]}</span>
+                        </div>
+                        <p class="text-sm text-secondary dark:text-gray-400 mb-1">系列: ${product.series}</p>
+                        <p class="text-sm text-secondary dark:text-gray-400 mb-2">尺寸: ${product.size}</p>
+                        <p class="font-bold text-primary mb-3">¥${parseFloat(product.price).toFixed(2)}</p>
+                        
+                        ${currentUser === 'admin' ? `
+                        <div class="flex gap-2">
+                            <button class="btn-secondary text-sm px-3 py-1" onclick="openProductModal('${product.id}')">
+                                <i class="fa fa-edit mr-1"></i> 编辑
+                            </button>
+                            <button class="btn-danger text-sm px-3 py-1" onclick="confirmAction('确定要删除这个产品吗？', () => deleteProduct('${product.id}'))">
+                                <i class="fa fa-trash mr-1"></i> 删除
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                productListEl.appendChild(productEl);
+            });
+        }
+
+        // 删除产品
+        async function deleteProduct(productId) {
+            try {
+                // 先获取产品信息，以便删除图片
+                const { data: productData } = await supabase
+                    .from('products')
+                    .select('image_url')
+                    .eq('id', productId)
+                    .single();
+                
+                // 如果有图片，从Storage中删除
+                if (productData && productData.image_url) {
+                    // 提取文件名
+                    const urlParts = productData.image_url.split('/');
+                    const fileName = urlParts[urlParts.length - 1];
                     
-                    <div class="flex justify-between items-start mb-3">
-                        <h3 class="font-semibold">${product.name}</h3>
-                        <span class="badge ${getStatusBadgeClass(product.status)}">
-                            ${getStatusText(product.status)}
-                        </span>
-                    </div>
-                    <div class="text-sm text-secondary dark:text-gray-400 space-y-1 mb-3">
-                        <p><span class="font-medium">系列:</span> ${product.series}</p>
-                        <p><span class="font-medium">尺寸:</span> ${product.size}</p>
-                        <p><span class="font-medium">价格:</span> ¥${product.price.toFixed(2)}</p>
-                    </div>
-                    ${currentUser === 'admin' ? `
-                    <div class="flex justify-end gap-2 mt-2">
-                        <button class="btn-secondary px-3 py-1 text-sm" onclick="openProductModal(${JSON.stringify(product)})">
-                            <i class="fa fa-edit mr-1"></i> 编辑
-                        </button>
-                        <button class="btn-danger px-3 py-1 text-sm" onclick="confirmAction('确定要删除该产品吗？', async () => {
-    if ('${product.image || ''}') {
-        const imagePath = '${product.image || ''}'.split('/').slice(-2).join('/');
-        await supabase.storage.from('product-images').remove([imagePath]);
-    }
-    
-    const { error } = await supabase.from('products').delete().eq('id', '${product.id}');
-    if (error) {
-        showToast('删除失败', 'error');
-        console.error(error);
-    } else {
-        showToast('删除成功');
-        loadProducts();
-    }
-    closeConfirm();
-})">
-    <i class="fa fa-trash mr-1"></i> 删除
-</button>
-                    </div>
-                    ` : ''}
-                </div>
-            `).join('');
-        }
-
-        // 获取状态文本
-        function getStatusText(status) {
-            const statusMap = {
-                'onsale': '在售',
-                'discontinued': '已停产',
-                'hot': '爆款',
-                'discount': '特价'
-            };
-            return statusMap[status] || status;
-        }
-
-        // 获取状态标签样式
-        function getStatusBadgeClass(status) {
-            const classMap = {
-                'onsale': 'bg-success/20 text-success',
-                'discontinued': 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-                'hot': 'bg-warning/20 text-warning',
-                'discount': 'bg-primary/20 text-primary'
-            };
-            return classMap[status] || 'bg-gray-200 text-gray-700';
+                    await supabase
+                        .storage
+                        .from('product-images')
+                        .remove([fileName]);
+                }
+                
+                // 从数据库中删除产品
+                const { error } = await supabase
+                    .from('products')
+                    .delete()
+                    .eq('id', productId);
+                
+                if (error) throw error;
+                
+                showToast('产品删除成功', 'success');
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                showToast('删除产品失败', 'error');
+            }
         }
 
         // 更新统计数据
         function updateStatistics() {
-            const total = products.length;
-            const onsale = products.filter(p => p.status === 'onsale').length;
-            const discontinued = products.filter(p => p.status === 'discontinued').length;
-            const hot = products.filter(p => p.status === 'hot').length;
-            
-            document.getElementById('total-products').textContent = total;
-            document.getElementById('onsale-products').textContent = onsale;
-            document.getElementById('discontinued-products').textContent = discontinued;
-            document.getElementById('hot-products').textContent = hot;
+            document.getElementById('total-products').textContent = products.length;
+            document.getElementById('onsale-products').textContent = products.filter(p => p.status === 'onsale').length;
+            document.getElementById('discontinued-products').textContent = products.filter(p => p.status === 'discontinued').length;
+            document.getElementById('hot-products').textContent = products.filter(p => p.status === 'hot').length;
         }
 
         // 更新图表
         function updateCharts() {
             const ctx = document.getElementById('series-chart').getContext('2d');
             
+            // 按系列统计产品数量
             const seriesCount = {};
             products.forEach(product => {
-                seriesCount[product.series] = (seriesCount[product.series] || 0) + 1;
+                if (seriesCount[product.series]) {
+                    seriesCount[product.series]++;
+                } else {
+                    seriesCount[product.series] = 1;
+                }
             });
             
-            const series = Object.keys(seriesCount);
-            const counts = Object.values(seriesCount);
+            // 准备图表数据
+            const labels = Object.keys(seriesCount);
+            const data = Object.values(seriesCount);
             
+            // 生成随机颜色
+            const backgroundColors = labels.map(() => 
+                `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.7)`
+            );
+            
+            // 销毁现有图表
             if (seriesChart) {
                 seriesChart.destroy();
             }
             
+            // 创建新图表
             seriesChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: series,
+                    labels: labels,
                     datasets: [{
-                        data: counts,
-                        backgroundColor: [
-                            '#2563eb', '#10b981', '#ef4444', '#f59e0b', 
-                            '#8b5cf6', '#ec4899', '#64748b', '#f97316'
-                        ],
+                        data: data,
+                        backgroundColor: backgroundColors,
                         borderWidth: 1
                     }]
                 },
@@ -1432,19 +1205,43 @@
             });
         }
 
-        // 应用筛选
+        // 切换视图模式（网格/列表）
+        function switchView(view) {
+            const gridBtn = document.getElementById('grid-view');
+            const listBtn = document.getElementById('list-view');
+            
+            if (view === 'grid') {
+                gridBtn.classList.add('bg-primary', 'text-white');
+                gridBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                listBtn.classList.remove('bg-primary', 'text-white');
+                listBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                document.getElementById('product-list').className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
+            } else {
+                listBtn.classList.add('bg-primary', 'text-white');
+                listBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                gridBtn.classList.remove('bg-primary', 'text-white');
+                gridBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                document.getElementById('product-list').className = 'grid grid-cols-1 gap-4';
+            }
+            
+            renderProductList();
+        }
+
+        // 应用筛选条件
         function applyFilters() {
             const series = document.getElementById('series-filter').value;
             const size = document.getElementById('size-filter').value;
             const minPrice = parseFloat(document.getElementById('min-price').value) || 0;
             const maxPrice = parseFloat(document.getElementById('max-price').value) || Infinity;
             
+            // 获取选中的状态
             const statusCheckboxes = document.querySelectorAll('input[type="checkbox"][value="onsale"], input[type="checkbox"][value="discontinued"], input[type="checkbox"][value="hot"], input[type="checkbox"][value="discount"]');
             const selectedStatuses = Array.from(statusCheckboxes)
                 .filter(checkbox => checkbox.checked)
                 .map(checkbox => checkbox.value);
             
-            return products.filter(product => {
+            // 筛选产品
+            const filteredProducts = products.filter(product => {
                 const matchesSeries = !series || product.series === series;
                 const matchesSize = !size || product.size === size;
                 const matchesPrice = product.price >= minPrice && product.price <= maxPrice;
@@ -1452,82 +1249,474 @@
                 
                 return matchesSeries && matchesSize && matchesPrice && matchesStatus;
             });
+            
+            renderProductList(filteredProducts);
         }
 
-        // 重置筛选
+        // 重置筛选条件
         function resetFilters() {
             document.getElementById('series-filter').value = '';
             document.getElementById('size-filter').value = '';
             document.getElementById('min-price').value = '';
             document.getElementById('max-price').value = '';
             
+            // 勾选所有状态
             document.querySelectorAll('input[type="checkbox"][value="onsale"], input[type="checkbox"][value="discontinued"], input[type="checkbox"][value="hot"], input[type="checkbox"][value="discount"]')
                 .forEach(checkbox => checkbox.checked = true);
-            
+                
             renderProductList();
         }
 
-        // 切换视图
-        function switchView(view) {
-            const productList = document.getElementById('product-list');
-            const gridBtn = document.getElementById('grid-view');
-            const listBtn = document.getElementById('list-view');
-            
-            if (view === 'grid') {
-                productList.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
-                gridBtn.classList.add('bg-primary', 'text-white');
-                gridBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-                listBtn.classList.remove('bg-primary', 'text-white');
-                listBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            } else {
-                productList.className = 'grid grid-cols-1 gap-4';
-                listBtn.classList.add('bg-primary', 'text-white');
-                listBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-                gridBtn.classList.remove('bg-primary', 'text-white');
-                gridBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            }
-        }
-
-        // 产品排序
+        // 排序产品
         function sortProducts() {
             const sortBy = document.getElementById('sort-by').value;
+            let sortedProducts = [...products];
             
             switch (sortBy) {
                 case 'newest':
-                    products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    sortedProducts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                     break;
                 case 'price-asc':
-                    products.sort((a, b) => a.price - b.price);
+                    sortedProducts.sort((a, b) => a.price - b.price);
                     break;
                 case 'price-desc':
-                    products.sort((a, b) => b.price - a.price);
+                    sortedProducts.sort((a, b) => b.price - a.price);
                     break;
             }
             
-            renderProductList();
+            renderProductList(sortedProducts);
         }
 
-        // 打开设置页面
+        // 添加自定义选项（系列或尺寸）
+        async function addCustomOption(type) {
+            const inputId = type === 'series' ? 'new-series' : 'new-size';
+            const value = document.getElementById(inputId).value.trim();
+            
+            if (!value) {
+                showToast(`请输入${type === 'series' ? '产品系列' : '尺寸规格'}`, 'error');
+                return;
+            }
+            
+            // 检查是否已存在
+            const existingOptions = type === 'series' ? customSeries : customSizes;
+            if (existingOptions.includes(value)) {
+                showToast(`${type === 'series' ? '产品系列' : '尺寸规格'}已存在`, 'error');
+                return;
+            }
+            
+            try {
+                const { error } = await supabase
+                    .from('custom_options')
+                    .insert([{ type, value }]);
+                
+                if (error) throw error;
+                
+                // 清空输入框
+                document.getElementById(inputId).value = '';
+                showToast(`${type === 'series' ? '产品系列' : '尺寸规格'}添加成功`, 'success');
+            } catch (error) {
+                console.error('Error adding custom option:', error);
+                showToast(`${type === 'series' ? '产品系列' : '尺寸规格'}添加失败`, 'error');
+            }
+        }
+
+        // 更新下拉选项
+        function updateSelectOptions(selectId, options) {
+            const select = document.getElementById(selectId);
+            const currentValue = select.value;
+            
+            // 保存当前选中值（如果有）
+            let hasCurrentValue = false;
+            
+            // 清除现有选项（保留第一个"全部"或"选择"选项）
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            // 添加新选项
+            options.forEach(option => {
+                const optionEl = document.createElement('option');
+                optionEl.value = option;
+                optionEl.textContent = option;
+                select.appendChild(optionEl);
+                
+                if (option === currentValue) {
+                    hasCurrentValue = true;
+                }
+            });
+            
+            // 恢复选中值
+            if (hasCurrentValue && currentValue) {
+                select.value = currentValue;
+            }
+        }
+
+        // 渲染自定义选项列表（用于设置页面）
+        function renderCustomOptionsLists() {
+            // 此函数在原代码中未实现，这里保持空实现以兼容
+        }
+
+        // 打开选项编辑模态框
+        function openEditOptionsModal(type) {
+            const modal = document.getElementById('edit-options-modal');
+            const title = document.getElementById('edit-modal-title');
+            const typeInput = document.getElementById('edit-option-type');
+            const optionsList = document.getElementById('options-list');
+            const newOptionInput = document.getElementById('edit-new-option');
+            
+            // 设置模态框标题和类型
+            typeInput.value = type;
+            title.textContent = `编辑${type === 'series' ? '产品系列' : '尺寸规格'}`;
+            
+            // 清空输入框
+            newOptionInput.value = '';
+            
+            // 获取当前选项列表
+            const options = type === 'series' ? customSeries : customSizes;
+            
+            // 渲染选项列表
+            optionsList.innerHTML = '';
+            options.forEach(option => {
+                const optionEl = document.createElement('div');
+                optionEl.className = 'flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-2 rounded-lg';
+                optionEl.innerHTML = `
+                    <span>${option}</span>
+                    <div class="flex gap-1">
+                        <button class="text-primary p-1 hover:bg-primary/10 rounded" onclick="editOption('${type}', '${option}')">
+                            <i class="fa fa-pencil"></i>
+                        </button>
+                        <button class="text-danger p-1 hover:bg-danger/10 rounded" onclick="confirmAction('确定要删除"${option}"吗？', () => deleteOption('${type}', '${option}'))">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                optionsList.appendChild(optionEl);
+            });
+            
+            modal.classList.remove('hidden');
+        }
+
+        // 从编辑模态框添加选项
+        function addOptionFromEditModal() {
+            const type = document.getElementById('edit-option-type').value;
+            const input = document.getElementById('edit-new-option');
+            const value = input.value.trim();
+            
+            if (value) {
+                // 使用现有函数添加选项
+                const inputId = type === 'series' ? 'new-series' : 'new-size';
+                document.getElementById(inputId).value = value;
+                addCustomOption(type);
+                
+                // 清空输入框
+                input.value = '';
+            }
+        }
+
+        // 编辑选项
+        function editOption(type, oldValue) {
+            const newValue = prompt(`修改${type === 'series' ? '产品系列' : '尺寸规格'}:`, oldValue);
+            
+            if (newValue !== null && newValue.trim() !== '' && newValue !== oldValue) {
+                const trimmedValue = newValue.trim();
+                
+                // 检查是否已存在
+                const existingOptions = type === 'series' ? customSeries : customSizes;
+                if (existingOptions.includes(trimmedValue)) {
+                    showToast(`${type === 'series' ? '产品系列' : '尺寸规格'}已存在`, 'error');
+                    return;
+                }
+                
+                // 更新选项
+                updateOption(type, oldValue, trimmedValue);
+            }
+        }
+
+        // 更新选项
+        async function updateOption(type, oldValue, newValue) {
+            try {
+                // 更新选项表
+                const { error: optionError } = await supabase
+                    .from('custom_options')
+                    .update({ value: newValue })
+                    .eq('type', type)
+                    .eq('value', oldValue);
+                
+                if (optionError) throw optionError;
+                
+                // 更新产品表中引用该选项的记录
+                const { error: productError } = await supabase
+                    .from('products')
+                    .update({ [type]: newValue })
+                    .eq(type, oldValue);
+                
+                if (productError) throw productError;
+                
+                showToast(`${type === 'series' ? '产品系列' : '尺寸规格'}更新成功`, 'success');
+            } catch (error) {
+                console.error('Error updating option:', error);
+                showToast(`${type === 'series' ? '产品系列' : '尺寸规格'}更新失败`, 'error');
+            }
+        }
+
+        // 删除选项
+        async function deleteOption(type, value) {
+            try {
+                // 检查是否有产品使用该选项
+                const { data: productsUsingOption } = await supabase
+                    .from('products')
+                    .select('id')
+                    .eq(type, value)
+                    .limit(1);
+                
+                if (productsUsingOption && productsUsingOption.length > 0) {
+                    showToast(`无法删除，有产品正在使用该${type === 'series' ? '系列' : '尺寸'}`, 'error');
+                    return;
+                }
+                
+                // 从数据库删除选项
+                const { error } = await supabase
+                    .from('custom_options')
+                    .delete()
+                    .eq('type', type)
+                    .eq('value', value);
+                
+                if (error) throw error;
+                
+                showToast(`${type === 'series' ? '产品系列' : '尺寸规格'}删除成功`, 'success');
+            } catch (error) {
+                console.error('Error deleting option:', error);
+                showToast(`${type === 'series' ? '产品系列' : '尺寸规格'}删除失败`, 'error');
+            }
+        }
+
+        // 打开设置模态框
         function openSettings() {
             document.getElementById('settings-modal').classList.remove('hidden');
         }
 
-        // 打开帮助页面
+        // 打开帮助模态框
         function openHelp() {
             document.getElementById('help-modal').classList.remove('hidden');
         }
 
+        // 保存密码修改
+        async function savePasswords() {
+            const userPassword = document.getElementById('user-password').value;
+            const userPasswordConfirm = document.getElementById('user-password-confirm').value;
+            const adminPassword = document.getElementById('admin-password').value;
+            const adminPasswordConfirm = document.getElementById('admin-password-confirm').value;
+            
+            // 验证密码
+            if (userPassword && userPassword !== userPasswordConfirm) {
+                showToast('普通用户密码不一致', 'error');
+                return;
+            }
+            
+            if (adminPassword && adminPassword !== adminPasswordConfirm) {
+                showToast('管理员密码不一致', 'error');
+                return;
+            }
+            
+            try {
+                // 更新用户密码
+                if (userPassword) {
+                    await supabase
+                        .from('settings')
+                        .upsert({ key: 'user_password', value: userPassword })
+                        .eq('key', 'user_password');
+                }
+                
+                // 更新管理员密码
+                if (adminPassword) {
+                    await supabase
+                        .from('settings')
+                        .upsert({ key: 'admin_password', value: adminPassword })
+                        .eq('key', 'admin_password');
+                }
+                
+                // 重置表单
+                document.getElementById('user-password').value = '';
+                document.getElementById('user-password-confirm').value = '';
+                document.getElementById('admin-password').value = '';
+                document.getElementById('admin-password-confirm').value = '';
+                
+                // 关闭模态框
+                document.getElementById('settings-modal').classList.add('hidden');
+                
+                showToast('密码修改成功', 'success');
+            } catch (error) {
+                console.error('Error saving passwords:', error);
+                showToast('密码修改失败', 'error');
+            }
+        }
+
+        // 导入演示数据
+        async function importDemoData() {
+            try {
+                // 演示产品数据
+                const demoProducts = [
+                    {
+                        name: '经典款 Polo 衫',
+                        series: '经典系列',
+                        size: 'S',
+                        price: 199.00,
+                        status: 'onsale',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    },
+                    {
+                        name: '商务款 Polo 衫',
+                        series: '商务系列',
+                        size: 'M',
+                        price: 299.00,
+                        status: 'hot',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    },
+                    {
+                        name: '休闲款 Polo 衫',
+                        series: '休闲系列',
+                        size: 'L',
+                        price: 159.00,
+                        status: 'discount',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    },
+                    {
+                        name: '限量款 Polo 衫',
+                        series: '经典系列',
+                        size: 'XL',
+                        price: 399.00,
+                        status: 'discontinued',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    }
+                ];
+                
+                // 导入产品
+                const { error: productsError } = await supabase
+                    .from('products')
+                    .insert(demoProducts);
+                
+                if (productsError) throw productsError;
+                
+                // 导入系列选项
+                const series = ['经典系列', '商务系列', '休闲系列'];
+                for (const s of series) {
+                    if (!customSeries.includes(s)) {
+                        await supabase
+                            .from('custom_options')
+                            .insert([{ type: 'series', value: s }]);
+                    }
+                }
+                
+                // 导入尺寸选项
+                const sizes = ['S', 'M', 'L', 'XL'];
+                for (const sz of sizes) {
+                    if (!customSizes.includes(sz)) {
+                        await supabase
+                            .from('custom_options')
+                            .insert([{ type: 'size', value: sz }]);
+                    }
+                }
+                
+                showToast('演示数据导入成功', 'success');
+            } catch (error) {
+                console.error('Error importing demo data:', error);
+                showToast('演示数据导入失败', 'error');
+            }
+        }
+
+        // 清除所有产品数据
+        async function clearAllData() {
+            try {
+                // 删除所有产品
+                const { error: productsError } = await supabase
+                    .from('products')
+                    .delete();
+                
+                if (productsError) throw productsError;
+                
+                // 清空产品图片存储桶
+                const { data: files, error: listError } = await supabase
+                    .storage
+                    .from('product-images')
+                    .list();
+                
+                if (listError) throw listError;
+                
+                if (files.length > 0) {
+                    const { error: deleteError } = await supabase
+                        .storage
+                        .from('product-images')
+                        .remove(files.map(file => file.name));
+                    
+                    if (deleteError) throw deleteError;
+                }
+                
+                showToast('所有产品数据已清除', 'success');
+            } catch (error) {
+                console.error('Error clearing data:', error);
+                showToast('清除数据失败', 'error');
+            }
+        }
+
+        // 导入数据（简化版）
+        function importData() {
+            showToast('数据导入功能开发中', 'info');
+        }
+
+        // 导出数据
+        async function exportData() {
+            try {
+                // 转换为CSV格式
+                let csvContent = "名称,系列,尺寸,价格,状态\n";
+                
+                products.forEach(product => {
+                    const statusText = {
+                        'onsale': '在售',
+                        'discontinued': '已停产',
+                        'hot': '爆款',
+                        'discount': '特价'
+                    }[product.status] || product.status;
+                    
+                    csvContent += `${product.name},${product.series},${product.size},${product.price},${statusText}\n`;
+                });
+                
+                // 创建下载链接
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `产品数据_${new Date().toLocaleDateString()}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showToast('数据导出成功', 'success');
+            } catch (error) {
+                console.error('Error exporting data:', error);
+                showToast('数据导出失败', 'error');
+            }
+        }
+
         // 确认操作
-        function confirmAction(message, callback) {
+        function confirmAction(message, confirmCallback) {
             const modal = document.getElementById('confirm-modal');
             const messageEl = document.getElementById('confirm-message');
             const okBtn = document.getElementById('confirm-ok');
             
             messageEl.textContent = message;
-            modal.classList.remove('hidden');
+            
+            // 设置确认按钮点击事件
             okBtn.onclick = function() {
-                callback();
+                closeConfirm();
+                confirmCallback();
             };
+            
+            modal.classList.remove('hidden');
         }
 
         // 关闭确认框
@@ -1535,421 +1724,70 @@
             document.getElementById('confirm-modal').classList.add('hidden');
         }
 
-        // 导入数据
-        function importData() {
-            showLoading(); // 新增：显示加载动画
+        // 显示提示消息
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const messageEl = document.getElementById('toast-message');
+            
+            // 设置图标和样式
+            icon.className = '';
+            toast.className = 'fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full';
+            
+            switch (type) {
+                case 'success':
+                    icon.className = 'fa fa-check-circle mr-2 text-success';
+                    toast.classList.add('bg-success/10', 'text-success', 'border', 'border-success/30');
+                    break;
+                case 'error':
+                    icon.className = 'fa fa-exclamation-circle mr-2 text-danger';
+                    toast.classList.add('bg-danger/10', 'text-danger', 'border', 'border-danger/30');
+                    break;
+                default:
+                    icon.className = 'fa fa-info-circle mr-2 text-primary';
+                    toast.classList.add('bg-primary/10', 'text-primary', 'border', 'border-primary/30');
+            }
+            
+            messageEl.textContent = message;
+            
+            // 显示提示
+            toast.classList.remove('translate-x-full');
+            
+            // 3秒后隐藏
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+            }, 3000);
+        }
+
+        // 处理退出登录
+        async function handleLogout() {
             try {
-                // 触发文件选择对话框
-                importInput.click();
+                // 关闭数据同步监听
+                if (dataSyncListener) {
+                    supabase.removeChannel(dataSyncListener.productsSubscription);
+                    supabase.removeChannel(dataSyncListener.optionsSubscription);
+                }
                 
-                importInput.onchange = async function(e) {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    
-                    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-                        showToast('请上传CSV格式文件', 'error');
-                        return;
-                    }
-                    
-                    const reader = new FileReader();
-                    reader.onload = async function(event) {
-                        try {
-                            const csvData = event.target.result;
-                            const products = parseCsvToProducts(csvData);
-                            
-                            if (products.length === 0) {
-                                showToast('CSV文件中未找到有效数据', 'warning');
-                                return;
-                            }
-                            
-                            const { error } = await supabase
-                                .from('products')
-                                .insert(products);
-                            
-                            if (error) throw error;
-                            
-                            loadProducts();
-                            showToast(`成功导入 ${products.length} 条产品数据`);
-                        } catch (err) {
-                            showToast('导入失败：' + err.message, 'error');
-                            console.error('导入错误：', err);
-                        } finally {
-                            hideLoading();
-                        }
-                    };
-                    reader.readAsText(file);
-                };
+                // 退出登录
+                const { error } = await supabase.auth.signOut();
+                
+                if (error) throw error;
+                
+                // 重置状态
+                currentUser = '';
+                products = [];
+                
+                // 显示登录页面
+                document.getElementById('app-page').classList.add('hidden');
+                document.getElementById('login-page').classList.remove('hidden');
+                
+                // 重新加载密码配置
+                await loadPasswords();
             } catch (error) {
-                showToast('导入数据失败', 'error');
-                console.error('Import data error:', error);
-                hideLoading();
+                console.error('Error logging out:', error);
+                showToast('退出登录失败', 'error');
             }
-        }
-
-        // 导出数据
-        function exportData() {
-            showLoading(); // 新增：显示加载动画
-            try {
-                if (products.length === 0) {
-                    showToast('没有数据可导出', 'warning');
-                    return;
-                }
-                
-                const headers = ['名称', '系列', '尺寸', '价格', '状态', '图片URL', '创建时间', '更新时间'];
-                const rows = products.map(p => [
-                    p.name,
-                    p.series,
-                    p.size,
-                    p.price,
-                    getStatusText(p.status),
-                    p.image || '',
-                    new Date(p.created_at).toLocaleString(),
-                    new Date(p.updated_at).toLocaleString()
-                ]);
-                
-                const csvContent = "data:text/csv;charset=utf-8," 
-                    + [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-                
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement('a');
-                link.setAttribute('href', encodedUri);
-                link.setAttribute('download', `产品数据_${new Date().toLocaleDateString()}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                showToast('数据导出成功');
-            } catch (error) {
-                showToast('导出数据失败', 'error');
-                console.error('Export data error:', error);
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
-            }
-        }
-
-        // 渲染自定义选项列表
-        function renderCustomOptionsLists() {
-            // 保持原功能不变
-        }
-
-        // 图片上传相关函数
-        function handleLocalUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            if (!['image/jpeg', 'image/png'].includes(file.type)) {
-                showToast('仅支持JPG/PNG格式', 'error');
-                return;
-            }
-            if (file.size > MAX_IMAGE_SIZE) {
-                showToast('图片大小不能超过5MB', 'error');
-                return;
-            }
-            
-            currentImageFile = file;
-            showImagePreview(URL.createObjectURL(file));
-        }
-
-        function handleCameraUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            if (file.size > MAX_IMAGE_SIZE) {
-                showToast('图片大小不能超过5MB', 'error');
-                return;
-            }
-            
-            currentImageFile = file;
-            showImagePreview(URL.createObjectURL(file));
-        }
-
-        function showImagePreview(imageUrl) {
-            const previewImg = document.getElementById('image-preview');
-            const placeholder = document.getElementById('image-placeholder');
-            const deleteBtn = document.getElementById('delete-image');
-            const uploadHint = document.getElementById('upload-hint');
-            
-            previewImg.src = imageUrl;
-            previewImg.classList.remove('hidden');
-            placeholder.classList.add('hidden');
-            deleteBtn.classList.remove('hidden');
-            uploadHint.classList.remove('hidden');
-        }
-
-        async function deleteProductImage() {
-            showLoading(); // 新增：显示加载动画
-            try {
-                if (currentImageUrl) {
-                    const imagePath = currentImageUrl.split('/').slice(-2).join('/');
-                    const { error } = await supabase
-                        .storage
-                        .from('product-images')
-                        .remove([imagePath]);
-                    
-                    if (error) {
-                        showToast('删除图片失败', 'error');
-                        console.error('Delete image error:', error);
-                        return;
-                    }
-                    currentImageUrl = '';
-                }
-                
-                currentImageFile = null;
-                const previewImg = document.getElementById('image-preview');
-                const placeholder = document.getElementById('image-placeholder');
-                const deleteBtn = document.getElementById('delete-image');
-                const uploadHint = document.getElementById('upload-hint');
-                
-                previewImg.src = '';
-                previewImg.classList.add('hidden');
-                placeholder.classList.remove('hidden');
-                deleteBtn.classList.add('hidden');
-                uploadHint.classList.add('hidden');
-                
-                document.getElementById('local-upload').value = '';
-                document.getElementById('camera-upload').value = '';
-            } catch (error) {
-                showToast('删除图片失败', 'error');
-                console.error('Delete image error:', error);
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
-            }
-        }
-
-        async function uploadImageToSupabase(file) {
-            showLoading(); // 新增：显示加载动画
-            try {
-                if (!file) return '';
-                
-                const productId = document.getElementById('product-id').value || Date.now();
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${productId}_${Date.now()}.${fileExt}`;
-                const filePath = `product-images/${fileName}`;
-                
-                const { data, error } = await supabase
-                    .storage
-                    .from('product-images')
-                    .upload(filePath, file, {
-                        cacheControl: '3600',
-                        upsert: true
-                    });
-                
-                if (error) {
-                    showToast('图片上传失败', 'error');
-                    console.error('Upload image error:', error);
-                    return '';
-                }
-                
-                const { data: { publicUrl } } = supabase
-                    .storage
-                    .from('product-images')
-                    .getPublicUrl(filePath);
-                
-                return publicUrl;
-            } catch (error) {
-                showToast('图片上传失败', 'error');
-                console.error('Upload image error:', error);
-                return '';
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
-            }
-        }
-
-        // 创建隐藏的文件上传输入框
-        const importInput = document.createElement('input');
-        importInput.type = 'file';
-        importInput.accept = '.csv';
-        importInput.style.display = 'none';
-        document.body.appendChild(importInput);
-
-        // CSV解析为产品数据数组
-        function parseCsvToProducts(csv) {
-            const lines = csv.split('\n').map(line => line.trim()).filter(line => line);
-            if (lines.length < 2) return [];
-            
-            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-            const requiredHeaders = ['名称', '系列', '尺寸', '价格', '状态'];
-            const hasRequired = requiredHeaders.every(h => headers.includes(h.toLowerCase()));
-            
-            if (!hasRequired) {
-                throw new Error('CSV文件必须包含：名称、系列、尺寸、价格、状态列');
-            }
-            
-            return lines.slice(1).map((line, index) => {
-                const values = line.split(',').map(v => v.trim());
-                const product = {
-                    name: values[headers.indexOf('名称')] || `未命名产品${index+1}`,
-                    series: values[headers.indexOf('系列')] || '未知系列',
-                    size: values[headers.indexOf('尺寸')] || '未知尺寸',
-                    price: parseFloat(values[headers.indexOf('价格')]) || 0,
-                    status: mapStatus(values[headers.indexOf('状态')]) || 'onsale',
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                };
-                return product;
-            });
-        }
-
-        // 状态文本映射
-        function mapStatus(statusText) {
-            const statusMap = {
-                '在售': 'onsale',
-                '已停产': 'discontinued',
-                '爆款': 'hot',
-                '特价': 'discount'
-            };
-            return statusMap[statusText] || null;
-        }
-
-        // 打开编辑自定义选项弹窗
-        function editCustomOption(type) {
-            const selectId = `${type}-filter`;
-            const select = document.getElementById(selectId);
-            const selectedValue = select.value;
-            
-            if (!selectedValue || selectedValue === '') {
-                showToast('请先选择要编辑的选项', 'warning');
-                return;
-            }
-            
-            document.getElementById('edit-option-type').value = type;
-            document.getElementById('edit-option-old-value').value = selectedValue;
-            document.getElementById('edit-option-new-value').value = selectedValue;
-            document.getElementById('edit-modal-title').textContent = `编辑${type === 'series' ? '产品系列' : '尺寸规格'}`;
-            document.getElementById('edit-option-modal').classList.remove('hidden');
-        }
-
-        // 保存编辑后的自定义选项
-        async function saveEditedOption(event) {
-            event.preventDefault();
-            showLoading(); // 新增：显示加载动画
-            
-            try {
-                const type = document.getElementById('edit-option-type').value;
-                const oldValue = document.getElementById('edit-option-old-value').value;
-                const newValue = document.getElementById('edit-option-new-value').value.trim();
-                
-                if (oldValue === newValue) {
-                    showToast('名称未修改', 'warning');
-                    document.getElementById('edit-option-modal').classList.add('hidden');
-                    return;
-                }
-                
-                const existingOptions = type === 'series' ? customSeries : customSizes;
-                if (existingOptions.includes(newValue)) {
-                    showToast('该名称已存在', 'error');
-                    return;
-                }
-                
-                const { error } = await supabase
-                    .from('custom_options')
-                    .update({ value: newValue })
-                    .eq('type', type)
-                    .eq('value', oldValue);
-                
-                if (error) {
-                    showToast('修改失败', 'error');
-                    console.error('Edit option error:', error);
-                    return;
-                }
-                
-                if (type === 'series') {
-                    const index = customSeries.indexOf(oldValue);
-                    if (index > -1) {
-                        customSeries[index] = newValue;
-                    }
-                } else {
-                    const index = customSizes.indexOf(oldValue);
-                    if (index > -1) {
-                        customSizes[index] = newValue;
-                    }
-                }
-                
-                updateSelectOptions(`${type}-filter`, type === 'series' ? customSeries : customSizes);
-                updateSelectOptions(`product-${type}`, type === 'series' ? customSeries : customSizes);
-                
-                const updatePromises = products.map(product => {
-                    if (product[type] === oldValue) {
-                        return supabase
-                            .from('products')
-                            .update({ [type]: newValue })
-                            .eq('id', product.id);
-                    }
-                    return Promise.resolve();
-                });
-                
-                await Promise.all(updatePromises);
-                await loadProducts();
-                
-                document.getElementById('edit-option-modal').classList.add('hidden');
-                showToast('修改成功');
-            } catch (error) {
-                showToast('保存修改失败', 'error');
-                console.error('Save edited option error:', error);
-            } finally {
-                hideLoading(); // 新增：隐藏加载动画
-            }
-        }
-
-        // 新增：工具函数 - 密码加密
-        function hashPassword(password) {
-            return CryptoJS.SHA256(password).toString();
-        }
-
-        // 新增：工具函数 - 防抖处理
-        function debounce(func, delay = 500) {
-            let timer = null;
-            return (...args) => {
-                clearTimeout(timer);
-                timer = setTimeout(() => func.apply(this, args), delay);
-            };
-        }
-
-        // 新增：防抖后的筛选函数
-        const debouncedApplyFilters = debounce(() => {
-            renderProductList();
-        });
-
-        // 新增：加载动画控制
-        function showLoading() {
-            document.getElementById('loading-spinner').classList.remove('hidden');
-        }
-
-        function hideLoading() {
-            document.getElementById('loading-spinner').classList.add('hidden');
-        }
-
-        // 新增：分页控制
-        function changePage(direction) {
-            const newPage = page + direction;
-            if (newPage >= 1 && newPage <= totalPages) {
-                page = newPage;
-                loadProducts();
-            }
-        }
-
-        function updatePagination() {
-            const pagination = document.getElementById('pagination');
-            const pageInfo = document.getElementById('page-info');
-            const prevBtn = document.getElementById('prev-page');
-            const nextBtn = document.getElementById('next-page');
-            
-            if (totalPages <= 1) {
-                pagination.classList.add('hidden');
-                return;
-            }
-            
-            pagination.classList.remove('hidden');
-            pageInfo.textContent = `第${page}页 / 共${totalPages}页`;
-            
-            prevBtn.disabled = page === 1;
-            prevBtn.classList.toggle('opacity-50', page === 1);
-            prevBtn.classList.toggle('cursor-not-allowed', page === 1);
-            
-            nextBtn.disabled = page === totalPages;
-            nextBtn.classList.toggle('opacity-50', page === totalPages);
-            nextBtn.classList.toggle('cursor-not-allowed', page === totalPages);
         }
     </script>
 </body>
 </html>
-
