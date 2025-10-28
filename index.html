@@ -1784,7 +1784,7 @@
             const productId = document.getElementById('product-id').value || Date.now();
             const fileExt = file.name.split('.').pop();
             const fileName = `${productId}_${Date.now()}.${fileExt}`;
-            const filePath = `product-images/${fileName}`;
+            const filePath = fileName; // 正确：直接使用文件名，存储桶已通过from('product-images')指定
             
             // 上传文件
             const { data, error } = await supabase
@@ -1812,3 +1812,4 @@
     </script>
 </body>
 </html>
+
