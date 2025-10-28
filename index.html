@@ -51,7 +51,7 @@
                 @apply bg-danger text-white px-4 py-2 rounded-lg hover:bg-danger/90 transition-all active:scale-95;
             }
             .input-field {
-                @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all dark:bg-gray-700 dark:text-white outline-none;
+                @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition                transition-all dark:bg-gray-700 dark:text-white outline-none;
             }
             .badge {
                 @apply px-2 py-1 rounded-full text-xs font-medium;
@@ -378,6 +378,42 @@
                         <option value="discount">特价</option>
                     </select>
                 </div>
+
+                <!-- 图片上传区域 -->
+                <div class="mb-4.5">
+                    <label class="form-label">产品图片</label>
+                    <div class="space-y-3">
+                        <!-- 图片预览 -->
+                        <div id="image-preview-container" class="w-full h-40 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-gray-900">
+                            <img id="image-preview" src="" alt="产品图片预览" class="w-full h-full object-cover hidden">
+                            <div id="image-placeholder" class="text-center text-gray-400">
+                                <i class="fa fa-picture-o text-3xl mb-2"></i>
+                                <p class="text-sm">未选择图片</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 上传按钮组 -->
+                        <div class="flex gap-2">
+                            <!-- 本地上传 -->
+                            <label class="btn-secondary flex-1 text-center cursor-pointer">
+                                <i class="fa fa-upload mr-1"></i> 本地上传
+                                <input type="file" id="local-upload" accept="image/jpg,image/png" class="hidden" onchange="handleLocalUpload(event)">
+                            </label>
+                            <!-- 拍摄上传（调用设备摄像头） -->
+                            <label class="btn-secondary flex-1 text-center cursor-pointer">
+                                <i class="fa fa-camera mr-1"></i> 拍摄上传
+                                <input type="file" id="camera-upload" accept="image/jpg,image/png" capture="environment" class="hidden" onchange="handleCameraUpload(event)">
+                            </label>
+                            <!-- 删除图片（编辑时显示） -->
+                            <button id="delete-image" type="button" class="btn-danger hidden" onclick="deleteProductImage()">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- 上传提示 -->
+                        <p id="upload-hint" class="text-xs text-secondary hidden">支持JPG/PNG格式，最大5MB</p>
+                    </div>
+                </div>
                 
                 <div class="flex justify-end gap-3 mt-6">
                     <button type="button" class="btn-secondary" onclick="closeProductModal()">取消</button>
@@ -463,7 +499,7 @@
                 </div>
                 <div id="admin-help" class="hidden">
                     <h3 class="font-medium text-primary">管理员功能</h3>
-                    <p class="text-sm mt-1">管理员可以添加自定义系列和尺寸，修改用户密码，导入导出数据。</p>
+                    <p class="text-sm mt-1">管理员可以添加自定义系列和尺寸，修改用户密码，导入导出数据，上传产品图片。</p>
                 </div>
             </div>
         </div>
@@ -500,6 +536,10 @@
         let currentUser = '';
         let dataSyncListener = null;
         let seriesChart = null;
+        // 新增图片相关变量
+        let currentImageFile = null; // 当前选中的图片文件
+        let currentImageUrl = '';    // 当前产品的图片URL（编辑时用）
+        const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 图片最大限制：5MB
         
         // 初始化Supabase客户端 - 请替换为你的项目信息
         const supabaseUrl = 'https://xntvwcweuqnqpgnmvbzq.supabase.co';
@@ -680,12 +720,20 @@
             const price = parseFloat(document.getElementById('product-price').value);
             const status = document.getElementById('product-status').value;
             
+            // 上传图片（如有）
+            let imageUrl = currentImageUrl; // 编辑时默认用已存URL
+            if (currentImageFile) {
+                imageUrl = await uploadImageToSupabase(currentImageFile);
+                if (!imageUrl && currentImageFile) return; // 上传失败则终止
+            }
+            
             const productData = {
                 name,
                 series,
                 size,
                 price,
                 status,
+                image: imageUrl, // 新增图片字段
                 updated_at: new Date().toISOString()
             };
             
@@ -713,6 +761,9 @@
                 return;
             }
             
+            // 保存成功后，清空图片状态
+            currentImageFile = null;
+            currentImageUrl = '';
             closeProductModal();
             showToast(productId ? '产品更新成功' : '产品添加成功');
         }
@@ -818,6 +869,15 @@
 
         // 清除所有产品数据
         async function clearAllData() {
+            // 先删除所有图片
+            for (const product of products) {
+                if (product.image) {
+                    const imagePath = product.image.split('/').slice(-2).join('/');
+                    await supabase.storage.from('product-images').remove([imagePath]);
+                }
+            }
+            
+            // 再删除产品数据
             const { error } = await supabase
                 .from('products')
                 .delete()
@@ -1026,7 +1086,21 @@
             const title = document.getElementById('modal-title');
             const form = document.getElementById('product-form');
             
-            // 重置表单
+            // 重置图片预览
+            const previewImg = document.getElementById('image-preview');
+            const placeholder = document.getElementById('image-placeholder');
+            const deleteBtn = document.getElementById('delete-image');
+            const uploadHint = document.getElementById('upload-hint');
+            
+            previewImg.src = '';
+            previewImg.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+            deleteBtn.classList.add('hidden');
+            uploadHint.classList.add('hidden');
+            currentImageFile = null;
+            currentImageUrl = '';
+            
+            // 编辑产品时，加载数据
             if (product) {
                 title.textContent = '编辑产品';
                 document.getElementById('product-id').value = product.id;
@@ -1035,6 +1109,12 @@
                 document.getElementById('product-size').value = product.size;
                 document.getElementById('product-price').value = product.price;
                 document.getElementById('product-status').value = product.status;
+                
+                // 加载产品图片
+                if (product.image) {
+                    currentImageUrl = product.image;
+                    showImagePreview(product.image);
+                }
             } else {
                 title.textContent = '添加产品';
                 form.reset();
@@ -1071,6 +1151,16 @@
             // 渲染产品卡片
             container.innerHTML = filteredProducts.map(product => `
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 card-hover transition-theme">
+                    <!-- 产品图片 -->
+                    <div class="w-full h-40 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-3">
+                        ${product.image ? 
+                            `<img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover">` : 
+                            `<div class="w-full h-full flex items-center justify-center text-gray-400">
+                                <i class="fa fa-picture-o text-3xl"></i>
+                            </div>`
+                        }
+                    </div>
+                    
                     <div class="flex justify-between items-start mb-3">
                         <h3 class="font-semibold">${product.name}</h3>
                         <span class="badge ${getStatusBadgeClass(product.status)}">
@@ -1088,6 +1178,13 @@
                             <i class="fa fa-edit mr-1"></i> 编辑
                         </button>
                         <button class="btn-danger px-3 py-1 text-sm" onclick="confirmAction('确定要删除该产品吗？', async () => {
+                            // 删除产品图片
+                            if (${JSON.stringify(product.image)}) {
+                                const imagePath = ${JSON.stringify(product.image)}.split('/').slice(-2).join('/');
+                                await supabase.storage.from('product-images').remove([imagePath]);
+                            }
+                            
+                            // 删除产品数据
                             const { error } = await supabase.from('products').delete().eq('id', '${product.id}');
                             if (error) {
                                 showToast('删除失败', 'error');
@@ -1314,13 +1411,14 @@
             }
             
             // 转换为CSV
-            const headers = ['名称', '系列', '尺寸', '价格', '状态', '创建时间', '更新时间'];
+            const headers = ['名称', '系列', '尺寸', '价格', '状态', '图片URL', '创建时间', '更新时间'];
             const rows = products.map(p => [
                 p.name,
                 p.series,
                 p.size,
                 p.price,
                 getStatusText(p.status),
+                p.image || '',
                 new Date(p.created_at).toLocaleString(),
                 new Date(p.updated_at).toLocaleString()
             ]);
@@ -1344,6 +1442,130 @@
         // 渲染自定义选项列表
         function renderCustomOptionsLists() {
             // 可根据需要实现自定义选项管理界面
+        }
+
+        // 图片上传相关函数
+        // 本地上传图片
+        function handleLocalUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // 验证文件格式和大小
+            if (!['image/jpeg', 'image/png'].includes(file.type)) {
+                showToast('仅支持JPG/PNG格式', 'error');
+                return;
+            }
+            if (file.size > MAX_IMAGE_SIZE) {
+                showToast('图片大小不能超过5MB', 'error');
+                return;
+            }
+            
+            // 存储文件并显示预览
+            currentImageFile = file;
+            showImagePreview(URL.createObjectURL(file));
+        }
+
+        // 拍摄上传图片（依赖设备摄像头）
+        function handleCameraUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // 拍摄的图片默认符合格式，仅验证大小
+            if (file.size > MAX_IMAGE_SIZE) {
+                showToast('图片大小不能超过5MB', 'error');
+                return;
+            }
+            
+            // 存储文件并显示预览
+            currentImageFile = file;
+            showImagePreview(URL.createObjectURL(file));
+        }
+
+        // 显示图片预览
+        function showImagePreview(imageUrl) {
+            const previewImg = document.getElementById('image-preview');
+            const placeholder = document.getElementById('image-placeholder');
+            const deleteBtn = document.getElementById('delete-image');
+            const uploadHint = document.getElementById('upload-hint');
+            
+            // 显示预览，隐藏占位符
+            previewImg.src = imageUrl;
+            previewImg.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            // 显示删除按钮和上传提示
+            deleteBtn.classList.remove('hidden');
+            uploadHint.classList.remove('hidden');
+        }
+
+        // 删除产品图片（含本地预览和Supabase存储）
+        async function deleteProductImage() {
+            // 1. 删除Supabase中已上传的图片（编辑时）
+            if (currentImageUrl) {
+                // 提取图片路径（从URL中截取，如"product-images/xxx.png"）
+                const imagePath = currentImageUrl.split('/').slice(-2).join('/');
+                const { error } = await supabase
+                    .storage
+                    .from('product-images')
+                    .remove([imagePath]);
+                
+                if (error) {
+                    showToast('删除图片失败', 'error');
+                    console.error('Delete image error:', error);
+                    return;
+                }
+                currentImageUrl = ''; // 清空已存URL
+            }
+            
+            // 2. 清空本地预览和文件
+            currentImageFile = null;
+            const previewImg = document.getElementById('image-preview');
+            const placeholder = document.getElementById('image-placeholder');
+            const deleteBtn = document.getElementById('delete-image');
+            const uploadHint = document.getElementById('upload-hint');
+            
+            previewImg.src = '';
+            previewImg.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+            deleteBtn.classList.add('hidden');
+            uploadHint.classList.add('hidden');
+            
+            // 清空文件输入框（避免重复上传同一文件）
+            document.getElementById('local-upload').value = '';
+            document.getElementById('camera-upload').value = '';
+        }
+
+        // 上传图片到Supabase Storage，返回图片URL
+        async function uploadImageToSupabase(file) {
+            if (!file) return '';
+            
+            // 生成唯一文件名（避免重复）：产品ID_时间戳.扩展名
+            const productId = document.getElementById('product-id').value || Date.now();
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${productId}_${Date.now()}.${fileExt}`;
+            const filePath = `product-images/${fileName}`;
+            
+            // 上传文件
+            const { data, error } = await supabase
+                .storage
+                .from('product-images')
+                .upload(filePath, file, {
+                    cacheControl: '3600', // 缓存1小时
+                    upsert: true // 覆盖同名文件（编辑时）
+                });
+            
+            if (error) {
+                showToast('图片上传失败', 'error');
+                console.error('Upload image error:', error);
+                return '';
+            }
+            
+            // 获取公开访问URL
+            const { data: { publicUrl } } = supabase
+                .storage
+                .from('product-images')
+                .getPublicUrl(filePath);
+            
+            return publicUrl;
         }
     </script>
 </body>
