@@ -992,36 +992,44 @@
         }
 
         // 显示应用页面
-        function showAppPage() {
-            document.getElementById('login-page').classList.add('hidden');
-            document.getElementById('app-page').classList.remove('hidden');
-            
-            // 更新用户角色显示
-            document.getElementById('user-role').textContent = currentUser === 'admin' ? '管理员' : '普通用户';
-            
-            // 显示管理员功能
-            if (currentUser === 'admin') {
-                document.getElementById('action-bar').style.display = 'flex';
-                document.getElementById('settings-btn').style.display = 'block';
-                document.getElementById('series-add-container').style.display = 'flex';
-                document.getElementById('size-add-container').style.display = 'flex';
-                document.getElementById('admin-help').classList.remove('hidden');
-                document.getElementById('empty-hint').classList.remove('hidden');
-            }
-        }
+       function showAppPage() {
+    const loginPage = document.getElementById('login-page');
+    const appPage = document.getElementById('app-page');
+    const userRole = document.getElementById('user-role');
+    // 新增：判断核心元素是否存在
+    if (!loginPage || !appPage || !userRole) return;
+    
+    loginPage.classList.add('hidden');
+    appPage.classList.remove('hidden');
+    userRole.textContent = currentUser === 'admin' ? '管理员' : '普通用户';
+    
+    // 管理员功能显示（新增元素存在判断）
+    if (currentUser === 'admin') {
+        const actionBar = document.getElementById('action-bar');
+        const settingsBtn = document.getElementById('settings-btn');
+        const seriesAddContainer = document.getElementById('series-add-container');
+        const sizeAddContainer = document.getElementById('size-add-container');
+        const adminHelp = document.getElementById('admin-help');
+        const emptyHint = document.getElementById('empty-hint');
+        
+        if (actionBar) actionBar.style.display = 'flex';
+        if (settingsBtn) settingsBtn.style.display = 'block';
+        if (seriesAddContainer) seriesAddContainer.style.display = 'flex';
+        if (sizeAddContainer) sizeAddContainer.style.display = 'flex';
+        if (adminHelp) adminHelp.classList.remove('hidden');
+        if (emptyHint) emptyHint.classList.remove('hidden');
+    }
+}
 
         // 更新下拉选项
-        function updateSelectOptions(selectId, options) {
-            const select = document.getElementById(selectId);
-            if (!select) return;
-            
-            // 保存当前选中值
-            const currentValue = select.value;
-            
-            // 清除现有选项（保留第一个"全部"或"选择"选项）
-            while (select.options.length > 1) {
-                select.remove(1);
-            }
+        function renderProductList() {
+    const container = document.getElementById('product-list');
+    // 新增：判断容器是否存在
+    if (!container) return;
+    
+    const filteredProducts = applyFilters();
+    // ...其他原有逻辑不变
+}
             
             // 添加新选项
             options.forEach(option => {
@@ -1038,35 +1046,44 @@
         }
 
         // 切换认证类型
-        function switchAuth(type) {
-            document.getElementById('auth-type').value = type;
-            if (type === 'user') {
-                document.getElementById('user-tab').classList.add('bg-primary', 'text-white');
-                document.getElementById('user-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-                document.getElementById('admin-tab').classList.remove('bg-primary', 'text-white');
-                document.getElementById('admin-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            } else {
-                document.getElementById('admin-tab').classList.add('bg-primary', 'text-white');
-                document.getElementById('admin-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-                document.getElementById('user-tab').classList.remove('bg-primary', 'text-white');
-                document.getElementById('user-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            }
-        }
+       function switchAuth(type) {
+    const authTypeInput = document.getElementById('auth-type');
+    const userTab = document.getElementById('user-tab');
+    const adminTab = document.getElementById('admin-tab');
+    // 新增：判断所有元素是否存在
+    if (!authTypeInput || !userTab || !adminTab) return;
+    
+    authTypeInput.value = type;
+    if (type === 'user') {
+        userTab.classList.add('bg-primary', 'text-white');
+        userTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+        adminTab.classList.remove('bg-primary', 'text-white');
+        adminTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+    } else {
+        adminTab.classList.add('bg-primary', 'text-white');
+        adminTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+        userTab.classList.remove('bg-primary', 'text-white');
+        userTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+    }
+}
 
         // 切换密码显示状态
         function togglePassword(id) {
-            const input = document.getElementById(id);
-            const icon = document.querySelector(`button[onclick="togglePassword('${id}')"] i`);
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            } else {
-                input.type = 'password';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            }
-        }
+    const input = document.getElementById(id);
+    const icon = document.querySelector(`button[onclick="togglePassword('${id}')"] i`);
+    // 新增：判断input和icon是否存在
+    if (!input || !icon) return;
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    }
+}
 
         // 切换主题
         function toggleTheme() {
@@ -1664,5 +1681,6 @@ function mapStatus(statusText) {
     </script>
 </body>
 </html>
+
 
 
