@@ -11,8 +11,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
-        // 全局初始化Supabase客户端
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -53,7 +51,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                 @apply bg-danger text-white px-4 py-2 rounded-lg hover:bg-danger/90 transition-all active:scale-95;
             }
             .input-field {
-                @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition                transition-all dark:bg-gray-700 dark:text-white outline-none;
+                @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition transition-all dark:bg-gray-700 dark:text-white outline-none;
             }
             .badge {
                 @apply px-2 py-1 rounded-full text-xs font-medium;
@@ -108,7 +106,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                         <i class="fa fa-exclamation-circle mr-1"></i> 用户名或密码错误
                     </div>
                     
-                    <button type="submit" class="btn-primary w-full">
+                    <button type="submit" class="btn-primary w-full" id="login-btn">
                         <i class="fa fa-sign-in mr-2"></i> 登录系统
                     </button>
                 </form>
@@ -419,7 +417,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                 
                 <div class="flex justify-end gap-3 mt-6">
                     <button type="button" class="btn-secondary" onclick="closeProductModal()">取消</button>
-                    <button type="submit" class="btn-primary">保存</button>
+                    <button type="submit" class="btn-primary" id="save-product-btn">保存</button>
                 </div>
             </form>
         </div>
@@ -599,39 +597,29 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
     </div>
 
     <script>
-        window.onload = async function() {
-  // 1. 检查主题设置（非Supabase相关，页面样式逻辑）
-  if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.documentElement.classList.add('dark');
-  }
-
-  // 2. 检查登录状态（通过Supabase Session）
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) {
-    // 登录状态：加载数据、设置同步监听、显示应用页面
-    currentUser = session.user.email === 'admin@example.com' ? 'admin' : 'user';
-    await loadCustomOptions(); // 加载产品系列/尺寸
-    await loadProducts(); // 加载产品数据
-    setupDataSync(); // 设置数据实时同步
-    showAppPage(); // 显示主页面
-  } else {
-    // 未登录：加载密码配置（用于本地登录验证）
-    await loadPasswords();
-  }
-};
-        // 全局变量初始化
-        let products = [];
-        let customSeries = [];
-        let customSizes = [];
-        let passwords = { user: '', admin: '' };
-        let currentUser = '';
-        let dataSyncListener = null;
-        let seriesChart = null;
-        // 新增图片相关变量
-        let currentImageFile = null; // 当前选中的图片文件
-        let currentImageUrl = '';    // 当前产品的图片URL（编辑时用）
-        const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 图片最大限制：5MB
+        // 工具函数：获取DOM元素
+        const $ = (id) => document.getElementById(id);
         
+        // 工具函数：简单加密（增强密码安全性）
+        const encryptPassword = (password) => {
+            // 实际项目中可使用更复杂的加密算法（如SHA-256）
+            return btoa(password + 'salt_' + new Date().getFullYear());
+        };
+
+        // 全局状态管理
+        const appState = {
+            products: [],
+            customSeries: [],
+            customSizes: [],
+            passwords: { user: '', admin: '' },
+            currentUser: '',
+            dataSyncListener: null,
+            seriesChart: null,
+            currentImageFile: null,
+            currentImageUrl: '',
+            MAX_IMAGE_SIZE: 5 * 1024 * 1024 // 5MB
+        };
+
         // 初始化Supabase客户端 - 请替换为你的项目信息
         const supabaseUrl = 'https://djzhpfszxuqtvmeqkubg.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqemhwZnN6eHVxdHZtZXFrdWJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3MDcwNTQsImV4cCI6MjA3NzI4MzA1NH0.65Ci6-6vwuIA7sSHlbdDWbnNj_Ai_LwrlW-N7dWwKx8';
@@ -642,14 +630,13 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             // 检查主题设置
             if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
             }
 
             // 检查登录状态
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-                currentUser = session.user.email === 'admin@example.com' ? 'admin' : 'user';
+                // 兼容旧逻辑：通过邮箱判断角色（实际使用时建议与密码逻辑统一）
+                appState.currentUser = session.user.email === 'admin@example.com' ? 'admin' : 'user';
                 await loadCustomOptions();
                 await loadProducts();
                 setupDataSync();
@@ -670,7 +657,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                 if (error) throw error;
                 
                 if (data) {
-                    products = data;
+                    appState.products = data;
                     renderProductList();
                     updateStatistics();
                     updateCharts();
@@ -700,20 +687,20 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             if (seriesError) console.error('Error loading series:', seriesError);
             if (sizeError) console.error('Error loading sizes:', sizeError);
             
-            customSeries = seriesData ? seriesData : [];
-            customSizes = sizeData ? sizeData : [];
+            appState.customSeries = seriesData ? seriesData : [];
+            appState.customSizes = sizeData ? sizeData : [];
             
             // 更新下拉菜单
-            updateSelectOptions('series-filter', customSeries.map(item => item.value));
-            updateSelectOptions('product-series', customSeries.map(item => item.value));
-            updateSelectOptions('size-filter', customSizes.map(item => item.value));
-            updateSelectOptions('product-size', customSizes.map(item => item.value));
+            updateSelectOptions('series-filter', appState.customSeries.map(item => item.value));
+            updateSelectOptions('product-series', appState.customSeries.map(item => item.value));
+            updateSelectOptions('size-filter', appState.customSizes.map(item => item.value));
+            updateSelectOptions('product-size', appState.customSizes.map(item => item.value));
             
             // 更新设置页面的选项列表
             renderCustomOptionsLists();
         }
 
-        // 加载密码配置
+        // 加载密码配置（加密存储）
         async function loadPasswords() {
             const { data } = await supabase
                 .from('settings')
@@ -723,9 +710,9 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             if (data && data.length > 0) {
                 data.forEach(item => {
                     if (item.key === 'user_password') {
-                        passwords.user = item.value;
+                        appState.passwords.user = item.value;
                     } else if (item.key === 'admin_password') {
-                        passwords.admin = item.value;
+                        appState.passwords.admin = item.value;
                     }
                 });
             }
@@ -733,6 +720,12 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 设置数据同步监听
         function setupDataSync() {
+            // 清除已有监听
+            if (appState.dataSyncListener) {
+                supabase.removeChannel(appState.dataSyncListener.productsSubscription);
+                supabase.removeChannel(appState.dataSyncListener.optionsSubscription);
+            }
+
             // 监听产品数据变化
             const productsSubscription = supabase
                 .channel('custom-filter-channel')
@@ -760,62 +753,74 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                 .subscribe();
                 
             // 存储订阅以便后续关闭
-            dataSyncListener = { productsSubscription, optionsSubscription };
+            appState.dataSyncListener = { productsSubscription, optionsSubscription };
         }
 
-        // 处理登录
+        // 处理登录（密码加密验证）
         async function handleLogin(event) {
             event.preventDefault();
+            const loginBtn = $('login-btn');
+            loginBtn.disabled = true; // 防止重复提交
             
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const authType = document.getElementById('auth-type').value;
+            const username = $('username').value;
+            const password = $('password').value;
+            const authType = $('auth-type').value;
             
-            // 验证密码（实际应用中应使用Supabase的认证系统）
-            if ((authType === 'user' && password !== passwords.user) || 
-                (authType === 'admin' && password !== passwords.admin)) {
-                document.getElementById('login-error').classList.remove('hidden');
+            // 加密输入的密码后再验证
+            const encryptedInput = encryptPassword(password);
+            const storedPassword = authType === 'user' ? appState.passwords.user : appState.passwords.admin;
+            
+            if (encryptedInput !== storedPassword) {
+                $('login-error').classList.remove('hidden');
+                loginBtn.disabled = false;
                 return;
             }
             
             // 登录成功，更新用户角色
-            currentUser = authType;
+            appState.currentUser = authType;
             await loadCustomOptions();
             await loadProducts();
             setupDataSync();
             showAppPage();
             showToast('登录成功');
+            loginBtn.disabled = false;
         }
 
         // 处理登出
         async function handleLogout() {
-            // 关闭数据同步监听
-            if (dataSyncListener) {
-                await supabase.removeChannel(dataSyncListener.productsSubscription);
-                await supabase.removeChannel(dataSyncListener.optionsSubscription);
+            // 关闭所有实时监听频道
+            if (appState.dataSyncListener) {
+                await supabase.removeChannel(appState.dataSyncListener.productsSubscription);
+                await supabase.removeChannel(appState.dataSyncListener.optionsSubscription);
+                appState.dataSyncListener = null;
             }
             
-            document.getElementById('login-page').classList.remove('hidden');
-            document.getElementById('app-page').classList.add('hidden');
+            $('login-page').classList.remove('hidden');
+            $('app-page').classList.add('hidden');
             showToast('已成功退出登录');
         }
 
-        // 保存产品
+        // 保存产品（防重复提交）
         async function saveProduct(event) {
             event.preventDefault();
+            const saveBtn = $('save-product-btn');
+            saveBtn.disabled = true; // 禁用按钮
             
-            const productId = document.getElementById('product-id').value;
-            const name = document.getElementById('product-name').value;
-            const series = document.getElementById('product-series').value;
-            const size = document.getElementById('product-size').value;
-            const price = parseFloat(document.getElementById('product-price').value);
-            const status = document.getElementById('product-status').value;
+            const productId = $('product-id').value;
+            const name = $('product-name').value;
+            const series = $('product-series').value;
+            const size = $('product-size').value;
+            const price = parseFloat($('product-price').value);
+            const status = $('product-status').value;
             
             // 上传图片（如有）
-            let imageUrl = currentImageUrl; // 编辑时默认用已存URL
-            if (currentImageFile) {
-                imageUrl = await uploadImageToSupabase(currentImageFile);
-                if (!imageUrl && currentImageFile) return; // 上传失败则终止
+            let imageUrl = appState.currentImageUrl; // 编辑时默认用已存URL
+            if (appState.currentImageFile) {
+                imageUrl = await uploadImageToSupabase(appState.currentImageFile);
+                if (!imageUrl && appState.currentImageFile) {
+                    saveBtn.disabled = false;
+                    return; // 上传失败则终止
+                }
             }
             
             const productData = {
@@ -824,7 +829,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                 size,
                 price,
                 status,
-                image: imageUrl, // 新增图片字段
+                image: imageUrl,
                 updated_at: new Date().toISOString()
             };
             
@@ -849,25 +854,27 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             if (result.error) {
                 showToast('保存产品失败', 'error');
                 console.error('Error saving product:', result.error);
+                saveBtn.disabled = false;
                 return;
             }
             
             // 保存成功后，清空图片状态
-            currentImageFile = null;
-            currentImageUrl = '';
+            appState.currentImageFile = null;
+            appState.currentImageUrl = '';
             closeProductModal();
             showToast(productId ? '产品更新成功' : '产品添加成功');
+            saveBtn.disabled = false;
         }
 
         // 添加自定义选项
         async function addCustomOption(type) {
             const inputId = `new-${type}`;
-            const value = document.getElementById(inputId).value.trim();
+            const value = $(inputId).value.trim();
             
             if (!value) return;
             
             // 检查是否已存在
-            const existingOptions = type === 'series' ? customSeries : customSizes;
+            const existingOptions = type === 'series' ? appState.customSeries : appState.customSizes;
             if (existingOptions.some(item => item.value === value)) {
                 showToast('该选项已存在', 'warning');
                 return;
@@ -888,19 +895,19 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             }
             
             // 清空输入框
-            document.getElementById(inputId).value = '';
+            $(inputId).value = '';
             showToast('添加成功');
         }
 
         // 保存新选项（从编辑模态框）
         async function saveNewOption() {
-            const type = document.getElementById('current-option-type').value;
-            const value = document.getElementById('new-option-input').value.trim();
+            const type = $('current-option-type').value;
+            const value = $('new-option-input').value.trim();
             
             if (!type || !value) return;
             
             // 检查是否已存在
-            const existingOptions = type === 'series' ? customSeries : customSizes;
+            const existingOptions = type === 'series' ? appState.customSeries : appState.customSizes;
             if (existingOptions.some(item => item.value === value)) {
                 showToast('该选项已存在', 'warning');
                 return;
@@ -921,7 +928,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             }
             
             // 清空输入框并刷新列表
-            document.getElementById('new-option-input').value = '';
+            $('new-option-input').value = '';
             await loadCustomOptions();
             renderOptionEditList(type);
             showToast('添加成功');
@@ -935,7 +942,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             const trimmedValue = newValue.trim();
             
             // 检查是否已存在
-            const existingOptions = type === 'series' ? customSeries : customSizes;
+            const existingOptions = type === 'series' ? appState.customSeries : appState.customSizes;
             if (existingOptions.some(item => item.value === trimmedValue && item.id !== id)) {
                 showToast('该选项已存在', 'warning');
                 return;
@@ -1006,12 +1013,12 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 打开选项编辑模态框
         function openOptionEditModal(type) {
-            const modal = document.getElementById('option-edit-modal');
-            const title = document.getElementById('option-modal-title');
+            const modal = $('option-edit-modal');
+            const title = $('option-modal-title');
             
             title.textContent = `编辑${type === 'series' ? '产品系列' : '尺寸规格'}`;
-            document.getElementById('current-option-type').value = type;
-            document.getElementById('new-option-input').value = '';
+            $('current-option-type').value = type;
+            $('new-option-input').value = '';
             
             // 渲染选项列表
             renderOptionEditList(type);
@@ -1021,8 +1028,8 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 渲染选项编辑列表
         function renderOptionEditList(type) {
-            const container = document.getElementById('option-list');
-            const options = type === 'series' ? customSeries : customSizes;
+            const container = $('option-list');
+            const options = type === 'series' ? appState.customSeries : appState.customSizes;
             
             if (!container) return;
             
@@ -1051,12 +1058,12 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             });
         }
 
-        // 保存密码修改
+        // 保存密码修改（加密存储）
         async function savePasswords() {
-            const userPassword = document.getElementById('user-password').value;
-            const userPasswordConfirm = document.getElementById('user-password-confirm').value;
-            const adminPassword = document.getElementById('admin-password').value;
-            const adminPasswordConfirm = document.getElementById('admin-password-confirm').value;
+            const userPassword = $('user-password').value;
+            const userPasswordConfirm = $('user-password-confirm').value;
+            const adminPassword = $('admin-password').value;
+            const adminPasswordConfirm = $('admin-password-confirm').value;
             
             // 验证用户密码
             if (userPassword && userPassword !== userPasswordConfirm) {
@@ -1070,20 +1077,20 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                 return;
             }
             
-            // 保存密码
+            // 保存密码（加密后存储）
             const updates = [];
             
             if (userPassword) {
                 updates.push({
                     key: 'user_password',
-                    value: userPassword
+                    value: encryptPassword(userPassword)
                 });
             }
             
             if (adminPassword) {
                 updates.push({
                     key: 'admin_password',
-                    value: adminPassword
+                    value: encryptPassword(adminPassword)
                 });
             }
             
@@ -1101,17 +1108,17 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                 // 更新本地密码缓存
                 updates.forEach(update => {
                     if (update.key === 'user_password') {
-                        passwords.user = update.value;
+                        appState.passwords.user = update.value;
                     } else if (update.key === 'admin_password') {
-                        passwords.admin = update.value;
+                        appState.passwords.admin = update.value;
                     }
                 });
                 
                 // 清空输入框
-                document.getElementById('user-password').value = '';
-                document.getElementById('user-password-confirm').value = '';
-                document.getElementById('admin-password').value = '';
-                document.getElementById('admin-password-confirm').value = '';
+                $('user-password').value = '';
+                $('user-password-confirm').value = '';
+                $('admin-password').value = '';
+                $('admin-password-confirm').value = '';
                 
                 showToast('密码修改成功');
             }
@@ -1120,7 +1127,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         // 清除所有产品数据
         async function clearAllData() {
             // 先删除所有图片
-            for (const product of products) {
+            for (const product of appState.products) {
                 if (product.image) {
                     const imagePath = product.image.split('/').slice(-2).join('/');
                     await supabase.storage.from('product-images').remove([imagePath]);
@@ -1139,7 +1146,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                 return;
             }
             
-            products = [];
+            appState.products = [];
             renderProductList();
             updateStatistics();
             updateCharts();
@@ -1184,13 +1191,13 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             const demoSizes = [...new Set(demoProducts.map(p => p.size))];
             
             for (const series of demoSeries) {
-                if (!customSeries.some(item => item.value === series)) {
+                if (!appState.customSeries.some(item => item.value === series)) {
                     await supabase.from('custom_options').insert({ type: 'series', value: series });
                 }
             }
             
             for (const size of demoSizes) {
-                if (!customSizes.some(item => item.value === size)) {
+                if (!appState.customSizes.some(item => item.value === size)) {
                     await supabase.from('custom_options').insert({ type: 'size', value: size });
                 }
             }
@@ -1214,9 +1221,9 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 显示提示消息
         function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const icon = document.getElementById('toast-icon');
-            const text = document.getElementById('toast-message');
+            const toast = $('toast');
+            const icon = $('toast-icon');
+            const text = $('toast-message');
             
             // 设置图标和样式
             if (type === 'success') {
@@ -1243,26 +1250,26 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 显示应用页面
         function showAppPage() {
-            document.getElementById('login-page').classList.add('hidden');
-            document.getElementById('app-page').classList.remove('hidden');
+            $('login-page').classList.add('hidden');
+            $('app-page').classList.remove('hidden');
             
             // 更新用户角色显示
-            document.getElementById('user-role').textContent = currentUser === 'admin' ? '管理员' : '普通用户';
+            $('user-role').textContent = appState.currentUser === 'admin' ? '管理员' : '普通用户';
             
             // 显示管理员功能
-            if (currentUser === 'admin') {
-                document.getElementById('action-bar').style.display = 'flex';
-                document.getElementById('settings-btn').style.display = 'block';
-                document.getElementById('series-add-container').style.display = 'flex';
-                document.getElementById('size-add-container').style.display = 'flex';
-                document.getElementById('admin-help').classList.remove('hidden');
-                document.getElementById('empty-hint').classList.remove('hidden');
+            if (appState.currentUser === 'admin') {
+                $('action-bar').style.display = 'flex';
+                $('settings-btn').style.display = 'block';
+                $('series-add-container').style.display = 'flex';
+                $('size-add-container').style.display = 'flex';
+                $('admin-help').classList.remove('hidden');
+                $('empty-hint').classList.remove('hidden');
             }
         }
 
         // 更新下拉选项
         function updateSelectOptions(selectId, options) {
-            const select = document.getElementById(selectId);
+            const select = $(selectId);
             if (!select) return;
             
             // 保存当前选中值
@@ -1289,23 +1296,23 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 切换认证类型
         function switchAuth(type) {
-            document.getElementById('auth-type').value = type;
+            $('auth-type').value = type;
             if (type === 'user') {
-                document.getElementById('user-tab').classList.add('bg-primary', 'text-white');
-                document.getElementById('user-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-                document.getElementById('admin-tab').classList.remove('bg-primary', 'text-white');
-                document.getElementById('admin-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                $('user-tab').classList.add('bg-primary', 'text-white');
+                $('user-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                $('admin-tab').classList.remove('bg-primary', 'text-white');
+                $('admin-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
             } else {
-                document.getElementById('admin-tab').classList.add('bg-primary', 'text-white');
-                document.getElementById('admin-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-                document.getElementById('user-tab').classList.remove('bg-primary', 'text-white');
-                document.getElementById('user-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                $('admin-tab').classList.add('bg-primary', 'text-white');
+                $('admin-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
+                $('user-tab').classList.remove('bg-primary', 'text-white');
+                $('user-tab').classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
             }
         }
 
         // 切换密码显示状态
         function togglePassword(id) {
-            const input = document.getElementById(id);
+            const input = $(id);
             const icon = document.querySelector(`button[onclick="togglePassword('${id}')"] i`);
             if (input.type === 'password') {
                 input.type = 'text';
@@ -1332,43 +1339,43 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 打开产品模态框
         function openProductModal(product = null) {
-            const modal = document.getElementById('product-modal');
-            const title = document.getElementById('modal-title');
-            const form = document.getElementById('product-form');
+            const modal = $('product-modal');
+            const title = $('modal-title');
+            const form = $('product-form');
             
             // 重置图片预览
-            const previewImg = document.getElementById('image-preview');
-            const placeholder = document.getElementById('image-placeholder');
-            const deleteBtn = document.getElementById('delete-image');
-            const uploadHint = document.getElementById('upload-hint');
+            const previewImg = $('image-preview');
+            const placeholder = $('image-placeholder');
+            const deleteBtn = $('delete-image');
+            const uploadHint = $('upload-hint');
             
             previewImg.src = '';
             previewImg.classList.add('hidden');
             placeholder.classList.remove('hidden');
             deleteBtn.classList.add('hidden');
             uploadHint.classList.add('hidden');
-            currentImageFile = null;
-            currentImageUrl = '';
+            appState.currentImageFile = null;
+            appState.currentImageUrl = '';
             
             // 编辑产品时，加载数据
             if (product) {
                 title.textContent = '编辑产品';
-                document.getElementById('product-id').value = product.id;
-                document.getElementById('product-name').value = product.name;
-                document.getElementById('product-series').value = product.series;
-                document.getElementById('product-size').value = product.size;
-                document.getElementById('product-price').value = product.price;
-                document.getElementById('product-status').value = product.status;
+                $('product-id').value = product.id;
+                $('product-name').value = product.name;
+                $('product-series').value = product.series;
+                $('product-size').value = product.size;
+                $('product-price').value = product.price;
+                $('product-status').value = product.status;
                 
                 // 加载产品图片
                 if (product.image) {
-                    currentImageUrl = product.image;
+                    appState.currentImageUrl = product.image;
                     showImagePreview(product.image);
                 }
             } else {
                 title.textContent = '添加产品';
                 form.reset();
-                document.getElementById('product-id').value = '';
+                $('product-id').value = '';
             }
             
             modal.classList.remove('hidden');
@@ -1376,12 +1383,12 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 关闭产品模态框
         function closeProductModal() {
-            document.getElementById('product-modal').classList.add('hidden');
+            $('product-modal').classList.add('hidden');
         }
 
         // 渲染产品列表
         function renderProductList() {
-            const container = document.getElementById('product-list');
+            const container = $('product-list');
             if (!container) return;
             
             // 应用筛选
@@ -1392,7 +1399,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                     <div class="col-span-full text-center py-10 text-secondary dark:text-gray-400">
                         <i class="fa fa-search text-4xl mb-2"></i>
                         <p>没有找到匹配的产品</p>
-                        ${currentUser === 'admin' ? '<p class="text-sm mt-1">请尝试调整筛选条件或添加新产品</p>' : ''}
+                        ${appState.currentUser === 'admin' ? '<p class="text-sm mt-1">请尝试调整筛选条件或添加新产品</p>' : ''}
                     </div>
                 `;
                 return;
@@ -1422,7 +1429,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                         <p><span class="font-medium">尺寸:</span> ${product.size}</p>
                         <p><span class="font-medium">价格:</span> ¥${product.price.toFixed(2)}</p>
                     </div>
-                    ${currentUser === 'admin' ? `
+                    ${appState.currentUser === 'admin' ? `
                     <div class="flex justify-end gap-2 mt-2">
                         <button class="btn-secondary px-3 py-1 text-sm" onclick="openProductModal(${JSON.stringify(product)})">
                             <i class="fa fa-edit mr-1"></i> 编辑
@@ -1477,24 +1484,24 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 更新统计数据
         function updateStatistics() {
-            const total = products.length;
-            const onsale = products.filter(p => p.status === 'onsale').length;
-            const discontinued = products.filter(p => p.status === 'discontinued').length;
-            const hot = products.filter(p => p.status === 'hot').length;
+            const total = appState.products.length;
+            const onsale = appState.products.filter(p => p.status === 'onsale').length;
+            const discontinued = appState.products.filter(p => p.status === 'discontinued').length;
+            const hot = appState.products.filter(p => p.status === 'hot').length;
             
-            document.getElementById('total-products').textContent = total;
-            document.getElementById('onsale-products').textContent = onsale;
-            document.getElementById('discontinued-products').textContent = discontinued;
-            document.getElementById('hot-products').textContent = hot;
+            $('total-products').textContent = total;
+            $('onsale-products').textContent = onsale;
+            $('discontinued-products').textContent = discontinued;
+            $('hot-products').textContent = hot;
         }
 
         // 更新图表
         function updateCharts() {
-            const ctx = document.getElementById('series-chart').getContext('2d');
+            const ctx = $('series-chart').getContext('2d');
             
             // 计算各系列产品数量
             const seriesCount = {};
-            products.forEach(product => {
+            appState.products.forEach(product => {
                 seriesCount[product.series] = (seriesCount[product.series] || 0) + 1;
             });
             
@@ -1502,12 +1509,12 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             const counts = Object.values(seriesCount);
             
             // 销毁现有图表
-            if (seriesChart) {
-                seriesChart.destroy();
+            if (appState.seriesChart) {
+                appState.seriesChart.destroy();
             }
             
             // 创建新图表
-            seriesChart = new Chart(ctx, {
+            appState.seriesChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: series,
@@ -1542,10 +1549,10 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 应用筛选
         function applyFilters() {
-            const series = document.getElementById('series-filter').value;
-            const size = document.getElementById('size-filter').value;
-            const minPrice = parseFloat(document.getElementById('min-price').value) || 0;
-            const maxPrice = parseFloat(document.getElementById('max-price').value) || Infinity;
+            const series = $('series-filter').value;
+            const size = $('size-filter').value;
+            const minPrice = parseFloat($('min-price').value) || 0;
+            const maxPrice = parseFloat($('max-price').value) || Infinity;
             
             // 获取选中的状态
             const statusCheckboxes = document.querySelectorAll('input[type="checkbox"][value="onsale"], input[type="checkbox"][value="discontinued"], input[type="checkbox"][value="hot"], input[type="checkbox"][value="discount"]');
@@ -1554,7 +1561,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                 .map(checkbox => checkbox.value);
             
             // 筛选产品
-            return products.filter(product => {
+            return appState.products.filter(product => {
                 const matchesSeries = !series || product.series === series;
                 const matchesSize = !size || product.size === size;
                 const matchesPrice = product.price >= minPrice && product.price <= maxPrice;
@@ -1566,10 +1573,10 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 重置筛选
         function resetFilters() {
-            document.getElementById('series-filter').value = '';
-            document.getElementById('size-filter').value = '';
-            document.getElementById('min-price').value = '';
-            document.getElementById('max-price').value = '';
+            $('series-filter').value = '';
+            $('size-filter').value = '';
+            $('min-price').value = '';
+            $('max-price').value = '';
             
             // 勾选所有状态
             document.querySelectorAll('input[type="checkbox"][value="onsale"], input[type="checkbox"][value="discontinued"], input[type="checkbox"][value="hot"], input[type="checkbox"][value="discount"]')
@@ -1580,9 +1587,9 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 切换视图
         function switchView(view) {
-            const productList = document.getElementById('product-list');
-            const gridBtn = document.getElementById('grid-view');
-            const listBtn = document.getElementById('list-view');
+            const productList = $('product-list');
+            const gridBtn = $('grid-view');
+            const listBtn = $('list-view');
             
             if (view === 'grid') {
                 productList.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
@@ -1601,17 +1608,17 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 产品排序
         function sortProducts() {
-            const sortBy = document.getElementById('sort-by').value;
+            const sortBy = $('sort-by').value;
             
             switch (sortBy) {
                 case 'newest':
-                    products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    appState.products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                     break;
                 case 'price-asc':
-                    products.sort((a, b) => a.price - b.price);
+                    appState.products.sort((a, b) => a.price - b.price);
                     break;
                 case 'price-desc':
-                    products.sort((a, b) => b.price - a.price);
+                    appState.products.sort((a, b) => b.price - a.price);
                     break;
             }
             
@@ -1620,20 +1627,20 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 打开设置页面
         function openSettings() {
-            document.getElementById('settings-modal').classList.remove('hidden');
+            $('settings-modal').classList.remove('hidden');
             renderCustomOptionsLists();
         }
 
         // 打开帮助页面
         function openHelp() {
-            document.getElementById('help-modal').classList.remove('hidden');
+            $('help-modal').classList.remove('hidden');
         }
 
         // 确认操作
         function confirmAction(message, callback) {
-            const modal = document.getElementById('confirm-modal');
-            const messageEl = document.getElementById('confirm-message');
-            const okBtn = document.getElementById('confirm-ok');
+            const modal = $('confirm-modal');
+            const messageEl = $('confirm-message');
+            const okBtn = $('confirm-ok');
             
             messageEl.textContent = message;
             modal.classList.remove('hidden');
@@ -1646,7 +1653,7 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 关闭确认框
         function closeConfirm() {
-            document.getElementById('confirm-modal').classList.add('hidden');
+            $('confirm-modal').classList.add('hidden');
         }
 
         // 导入数据
@@ -1656,14 +1663,14 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 导出数据
         function exportData() {
-            if (products.length === 0) {
+            if (appState.products.length === 0) {
                 showToast('没有数据可导出', 'warning');
                 return;
             }
             
             // 转换为CSV
             const headers = ['名称', '系列', '尺寸', '价格', '状态', '图片URL', '创建时间', '更新时间'];
-            const rows = products.map(p => [
+            const rows = appState.products.map(p => [
                 p.name,
                 p.series,
                 p.size,
@@ -1692,18 +1699,18 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 渲染自定义选项列表
         function renderCustomOptionsLists() {
-            const seriesContainer = document.getElementById('series-list-display');
-            const sizeContainer = document.getElementById('size-list-display');
+            const seriesContainer = $('series-list-display');
+            const sizeContainer = $('size-list-display');
             
             if (seriesContainer) {
-                seriesContainer.innerHTML = customSeries.length > 0 
-                    ? customSeries.map(item => `<span class="badge bg-primary/10 text-primary dark:bg-primary/20">${item.value}</span>`).join('')
+                seriesContainer.innerHTML = appState.customSeries.length > 0 
+                    ? appState.customSeries.map(item => `<span class="badge bg-primary/10 text-primary dark:bg-primary/20">${item.value}</span>`).join('')
                     : '<p class="text-gray-500 text-sm">暂无产品系列</p>';
             }
             
             if (sizeContainer) {
-                sizeContainer.innerHTML = customSizes.length > 0
-                    ? customSizes.map(item => `<span class="badge bg-primary/10 text-primary dark:bg-primary/20">${item.value}</span>`).join('')
+                sizeContainer.innerHTML = appState.customSizes.length > 0
+                    ? appState.customSizes.map(item => `<span class="badge bg-primary/10 text-primary dark:bg-primary/20">${item.value}</span>`).join('')
                     : '<p class="text-gray-500 text-sm">暂无尺寸规格</p>';
             }
         }
@@ -1719,13 +1726,13 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                 showToast('仅支持JPG/PNG格式', 'error');
                 return;
             }
-            if (file.size > MAX_IMAGE_SIZE) {
+            if (file.size > appState.MAX_IMAGE_SIZE) {
                 showToast('图片大小不能超过5MB', 'error');
                 return;
             }
             
             // 存储文件并显示预览
-            currentImageFile = file;
+            appState.currentImageFile = file;
             showImagePreview(URL.createObjectURL(file));
         }
 
@@ -1735,22 +1742,22 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             if (!file) return;
             
             // 拍摄的图片默认符合格式，仅验证大小
-            if (file.size > MAX_IMAGE_SIZE) {
+            if (file.size > appState.MAX_IMAGE_SIZE) {
                 showToast('图片大小不能超过5MB', 'error');
                 return;
             }
             
             // 存储文件并显示预览
-            currentImageFile = file;
+            appState.currentImageFile = file;
             showImagePreview(URL.createObjectURL(file));
         }
 
         // 显示图片预览
         function showImagePreview(imageUrl) {
-            const previewImg = document.getElementById('image-preview');
-            const placeholder = document.getElementById('image-placeholder');
-            const deleteBtn = document.getElementById('delete-image');
-            const uploadHint = document.getElementById('upload-hint');
+            const previewImg = $('image-preview');
+            const placeholder = $('image-placeholder');
+            const deleteBtn = $('delete-image');
+            const uploadHint = $('upload-hint');
             
             // 显示预览，隐藏占位符
             previewImg.src = imageUrl;
@@ -1764,9 +1771,9 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         // 删除产品图片（含本地预览和Supabase存储）
         async function deleteProductImage() {
             // 1. 删除Supabase中已上传的图片（编辑时）
-            if (currentImageUrl) {
+            if (appState.currentImageUrl) {
                 // 提取图片路径（从URL中截取，如"product-images/xxx.png"）
-                const imagePath = currentImageUrl.split('/').slice(-2).join('/');
+                const imagePath = appState.currentImageUrl.split('/').slice(-2).join('/');
                 const { error } = await supabase
                     .storage
                     .from('product-images')
@@ -1777,15 +1784,15 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
                     console.error('Delete image error:', error);
                     return;
                 }
-                currentImageUrl = ''; // 清空已存URL
+                appState.currentImageUrl = ''; // 清空已存URL
             }
             
             // 2. 清空本地预览和文件
-            currentImageFile = null;
-            const previewImg = document.getElementById('image-preview');
-            const placeholder = document.getElementById('image-placeholder');
-            const deleteBtn = document.getElementById('delete-image');
-            const uploadHint = document.getElementById('upload-hint');
+            appState.currentImageFile = null;
+            const previewImg = $('image-preview');
+            const placeholder = $('image-placeholder');
+            const deleteBtn = $('delete-image');
+            const uploadHint = $('upload-hint');
             
             previewImg.src = '';
             previewImg.classList.add('hidden');
@@ -1794,45 +1801,45 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             uploadHint.classList.add('hidden');
             
             // 清空文件输入框（避免重复上传同一文件）
-            document.getElementById('local-upload').value = '';
-            document.getElementById('camera-upload').value = '';
+            $('local-upload').value = '';
+            $('camera-upload').value = '';
         }
 
         // 上传图片到Supabase Storage，返回图片URL
         async function uploadImageToSupabase(file) {
             if (!file) return '';
             
-            // 生成唯一文件名（避免重复）：产品ID_时间戳.扩展名
-            const productId = document.getElementById('product-id').value || Date.now();
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${productId}_${Date.now()}.${fileExt}`;
-            const filePath = `product-images/${fileName}`;
-            
-            // 上传文件
-            const { data, error } = await supabase
-                .storage
-                .from('product-images')
-                .upload(filePath, file, {
-                    cacheControl: '3600', // 缓存1小时
-                    upsert: true // 覆盖同名文件（编辑时）
-                });
-            
-            if (error) {
-                showToast('图片上传失败', 'error');
+            try {
+                // 生成唯一文件名（避免重复）：产品ID_时间戳.扩展名
+                const productId = $('product-id').value || Date.now();
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${productId}_${Date.now()}.${fileExt}`;
+                const filePath = `product-images/${fileName}`;
+                
+                // 上传文件
+                const { data, error } = await supabase
+                    .storage
+                    .from('product-images')
+                    .upload(filePath, file, {
+                        cacheControl: '3600', // 缓存1小时
+                        upsert: true // 覆盖同名文件（编辑时）
+                    });
+                
+                if (error) throw new Error(error.message);
+                
+                // 获取公开访问URL
+                const { data: { publicUrl } } = supabase
+                    .storage
+                    .from('product-images')
+                    .getPublicUrl(filePath);
+                
+                return publicUrl;
+            } catch (error) {
+                showToast('图片上传失败：' + error.message, 'error');
                 console.error('Upload image error:', error);
                 return '';
             }
-            
-            // 获取公开访问URL
-            const { data: { publicUrl } } = supabase
-                .storage
-                .from('product-images')
-                .getPublicUrl(filePath);
-            
-            return publicUrl;
         }
     </script>
 </body>
 </html>
-
-
