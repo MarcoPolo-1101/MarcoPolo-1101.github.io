@@ -596,9 +596,9 @@
         let currentImageUrl = '';    // 当前产品的图片URL（编辑时用）
         const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 图片最大限制：5MB
         
-        // 初始化Supabase客户端 - 请替换为你的项目信息
-        const supabaseUrl = 'https://hwkrjjewspcrorlwtdfr.supabase.co'; // 替换为你的Supabase URL
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3a3JqamV3c3Bjcm9ybHd0ZGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NTIyODUsImV4cCI6MjA3NzMyODI4NX0.O8-Y3AKhorxiXEdYGkT0ISAJkEQhUYITKyGhF9U34_w'; // 替换为你的anon key
+        // 初始化Supabase客户端 - 已替换为您提供的项目信息
+        const supabaseUrl = 'https://hwkrjjewspcrorlwtdfr.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3a3JqamV3c3Bjcm9ybHd0ZGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NTIyODUsImV4cCI6MjA3NzMyODI4NX0.O8-Y3AKhorxiXEdYGkT0ISAJkEQhUYITKyGhF9U34_w';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 页面加载完成后初始化
@@ -679,43 +679,48 @@
             renderCustomOptionsLists();
         }
 
-        // 设置数据同步监听（使用唯一通道名避免冲突）
+        // 设置数据同步监听（使用唯一通道名避免冲突，新增空值校验）
         function setupDataSync() {
-            // 生成唯一通道ID（基于当前会话ID）
-            const { data: { session } } = supabase.auth.getSession();
-            const channelId = `product-sync-${session?.session_id || Date.now()}`;
-            
-            // 监听产品数据变化
-            const productsSubscription = supabase
-                .channel(channelId)
-                .on(
-                    'postgres_changes',
-                    { event: '*', schema: 'public', table: 'products' },
-                    (payload) => {
-                        console.log('Product change detected:', payload);
-                        loadProducts(); // 数据变化时重新加载产品列表
-                    }
-                )
-                .subscribe();
-            
-            // 监听自定义选项变化
-            const optionsSubscription = supabase
-                .channel(channelId)
-                .on(
-                    'postgres_changes',
-                    { event: '*', schema: 'public', table: 'custom_options' },
-                    (payload) => {
-                        console.log('Custom option change detected:', payload);
-                        loadCustomOptions(); // 数据变化时重新加载筛选选项
-                    }
-                )
-                .subscribe();
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (!session) {
+                    console.warn('未获取到会话，跳过实时同步初始化');
+                    return;
+                }
+                // 生成唯一通道ID（基于当前会话ID）
+                const channelId = `product-sync-${session?.session_id || Date.now()}`;
                 
-            // 存储订阅以便后续关闭
-            dataSyncListener = { productsSubscription, optionsSubscription };
+                // 监听产品数据变化
+                const productsSubscription = supabase
+                    .channel(channelId)
+                    .on(
+                        'postgres_changes',
+                        { event: '*', schema: 'public', table: 'products' },
+                        (payload) => {
+                            console.log('Product change detected:', payload);
+                            loadProducts(); // 数据变化时重新加载产品列表
+                        }
+                    )
+                    .subscribe();
+                
+                // 监听自定义选项变化
+                const optionsSubscription = supabase
+                    .channel(channelId)
+                    .on(
+                        'postgres_changes',
+                        { event: '*', schema: 'public', table: 'custom_options' },
+                        (payload) => {
+                            console.log('Custom option change detected:', payload);
+                            loadCustomOptions(); // 数据变化时重新加载筛选选项
+                        }
+                    )
+                    .subscribe();
+                    
+                // 存储订阅以便后续关闭
+                dataSyncListener = { productsSubscription, optionsSubscription };
+            });
         }
 
-        // 处理登录（使用Supabase Auth）
+        // 处理登录（使用Supabase Auth，新增会话空值校验）
         async function handleLogin(event) {
             event.preventDefault();
             
@@ -734,8 +739,14 @@
                 return;
             }
             
-            // 登录成功，获取用户角色
+            // 登录成功后获取会话，校验是否存在
             const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                showToast('登录会话获取失败，请重试', 'error');
+                return;
+            }
+            
+            // 登录成功，获取用户角色
             currentUser = session.user.email === 'admin@example.com' ? 'admin' : 'user';
             
             // 加载数据并显示应用页面
@@ -1536,251 +1547,4 @@
                 gridBtn.classList.add('bg-primary', 'text-white');
                 gridBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
                 listBtn.classList.remove('bg-primary', 'text-white');
-                listBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            } else {
-                productList.className = 'grid grid-cols-1 gap-4';
-                listBtn.classList.add('bg-primary', 'text-white');
-                listBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-                gridBtn.classList.remove('bg-primary', 'text-white');
-                gridBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
-            }
-        }
-
-        // 产品排序
-        function sortProducts() {
-            const sortBy = document.getElementById('sort-by').value;
-            
-            switch (sortBy) {
-                case 'newest':
-                    products.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-                    break;
-                case 'price-asc':
-                    products.sort((a, b) => a.price - b.price);
-                    break;
-                case 'price-desc':
-                    products.sort((a, b) => b.price - a.price);
-                    break;
-            }
-            
-            renderProductList();
-        }
-
-        // 打开设置页面
-        function openSettings() {
-            document.getElementById('settings-modal').classList.remove('hidden');
-            renderCustomOptionsLists();
-        }
-
-        // 打开帮助页面
-        function openHelp() {
-            document.getElementById('help-modal').classList.remove('hidden');
-        }
-
-        // 确认操作
-        function confirmAction(message, callback) {
-            const modal = document.getElementById('confirm-modal');
-            const messageEl = document.getElementById('confirm-message');
-            const okBtn = document.getElementById('confirm-ok');
-            
-            messageEl.textContent = message;
-            modal.classList.remove('hidden');
-            
-            // 绑定确认按钮事件
-            okBtn.onclick = function() {
-                callback();
-            };
-        }
-
-        // 关闭确认框
-        function closeConfirm() {
-            document.getElementById('confirm-modal').classList.add('hidden');
-        }
-
-        // 导入数据
-        function importData() {
-            showToast('数据导入功能开发中', 'warning');
-        }
-
-        // 导出数据
-        function exportData() {
-            if (products.length === 0) {
-                showToast('没有数据可导出', 'warning');
-                return;
-            }
-            
-            // 转换为CSV
-            const headers = ['名称', '系列', '尺寸', '价格', '状态', '图片URL', '创建时间', '更新时间'];
-            const rows = products.map(p => [
-                p.name,
-                p.series,
-                p.size,
-                p.price,
-                getStatusText(p.status),
-                p.image || '',
-                new Date(p.created_at).toLocaleString(),
-                new Date(p.updated_at).toLocaleString()
-            ]);
-            
-            const csvContent = "data:text/csv;charset=utf-8," 
-                + [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-            
-            // 创建下载链接
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement('a');
-            link.setAttribute('href', encodedUri);
-            link.setAttribute('download', `产品数据_${new Date().toLocaleDateString()}.csv`);
-            document.body.appendChild(link);
-            
-            // 触发下载
-            link.click();
-            document.body.removeChild(link);
-            showToast('数据导出成功');
-        }
-
-        // 渲染自定义选项列表
-        function renderCustomOptionsLists() {
-            const seriesContainer = document.getElementById('series-list-display');
-            const sizeContainer = document.getElementById('size-list-display');
-            
-            if (seriesContainer) {
-                seriesContainer.innerHTML = customSeries.length > 0 
-                    ? customSeries.map(item => `<span class="badge bg-primary/10 text-primary dark:bg-primary/20">${item.value}</span>`).join('')
-                    : '<p class="text-gray-500 text-sm">暂无产品系列</p>';
-            }
-            
-            if (sizeContainer) {
-                sizeContainer.innerHTML = customSizes.length > 0
-                    ? customSizes.map(item => `<span class="badge bg-primary/10 text-primary dark:bg-primary/20">${item.value}</span>`).join('')
-                    : '<p class="text-gray-500 text-sm">暂无尺寸规格</p>';
-            }
-        }
-
-        // 图片上传相关函数
-        // 本地上传图片
-        function handleLocalUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            // 验证文件格式和大小
-            if (!['image/jpeg', 'image/png'].includes(file.type)) {
-                showToast('仅支持JPG/PNG格式', 'error');
-                return;
-            }
-            if (file.size > MAX_IMAGE_SIZE) {
-                showToast('图片大小不能超过5MB', 'error');
-                return;
-            }
-            
-            // 存储文件并显示预览
-            currentImageFile = file;
-            showImagePreview(URL.createObjectURL(file));
-        }
-
-        // 拍摄上传图片（依赖设备摄像头）
-        function handleCameraUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            // 拍摄的图片默认符合格式，仅验证大小
-            if (file.size > MAX_IMAGE_SIZE) {
-                showToast('图片大小不能超过5MB', 'error');
-                return;
-            }
-            
-            // 存储文件并显示预览
-            currentImageFile = file;
-            showImagePreview(URL.createObjectURL(file));
-        }
-
-        // 显示图片预览
-        function showImagePreview(imageUrl) {
-            const previewImg = document.getElementById('image-preview');
-            const placeholder = document.getElementById('image-placeholder');
-            const deleteBtn = document.getElementById('delete-image');
-            const uploadHint = document.getElementById('upload-hint');
-            
-            // 显示预览，隐藏占位符
-            previewImg.src = imageUrl;
-            previewImg.classList.remove('hidden');
-            placeholder.classList.add('hidden');
-            // 显示删除按钮和上传提示
-            deleteBtn.classList.remove('hidden');
-            uploadHint.classList.remove('hidden');
-        }
-
-        // 删除产品图片（含本地预览和Supabase存储）
-        async function deleteProductImage() {
-            // 1. 删除Supabase中已上传的图片（编辑时）
-            if (currentImageUrl) {
-                // 从URL提取存储路径
-                const urlParts = currentImageUrl.split('/public/');
-                if (urlParts.length > 1) {
-                    const imagePath = urlParts[1];
-                    const { error } = await supabase
-                        .storage
-                        .from('product-images')
-                        .remove([imagePath]);
-                    
-                    if (error) {
-                        showToast('删除图片失败', 'error');
-                        console.error('Delete image error:', error);
-                        return;
-                    }
-                }
-                currentImageUrl = ''; // 清空已存URL
-            }
-            
-            // 2. 清空本地预览和文件
-            currentImageFile = null;
-            const previewImg = document.getElementById('image-preview');
-            const placeholder = document.getElementById('image-placeholder');
-            const deleteBtn = document.getElementById('delete-image');
-            const uploadHint = document.getElementById('upload-hint');
-            
-            previewImg.src = '';
-            previewImg.classList.add('hidden');
-            placeholder.classList.remove('hidden');
-            deleteBtn.classList.add('hidden');
-            uploadHint.classList.add('hidden');
-            
-            // 清空文件输入框（避免重复上传同一文件）
-            document.getElementById('local-upload').value = '';
-            document.getElementById('camera-upload').value = '';
-        }
-
-        // 上传图片到Supabase Storage，返回图片URL
-        async function uploadImageToSupabase(file) {
-            if (!file) return '';
-            
-            // 生成唯一文件名（避免重复）：产品ID_时间戳.扩展名
-            const productId = document.getElementById('product-id').value || Date.now();
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${productId}_${Date.now()}.${fileExt}`;
-            const filePath = `product-images/${fileName}`;
-            
-            // 上传文件
-            const { data, error } = await supabase
-                .storage
-                .from('product-images')
-                .upload(filePath, file, {
-                    cacheControl: '3600', // 缓存1小时
-                    upsert: true // 覆盖同名文件（编辑时）
-                });
-            
-            if (error) {
-                showToast('图片上传失败', 'error');
-                console.error('Upload image error:', error);
-                return '';
-            }
-            
-            // 获取公开访问URL
-            const { data: { publicUrl } } = supabase
-                .storage
-                .from('product-images')
-                .getPublicUrl(filePath);
-            
-            return publicUrl;
-        }
-    </script>
-</body>
-</html>
+                listBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'hover:bg-gray-
