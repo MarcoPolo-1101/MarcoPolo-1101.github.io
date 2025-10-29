@@ -11,6 +11,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
+        // 全局初始化Supabase客户端
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -597,6 +599,26 @@
     </div>
 
     <script>
+        window.onload = async function() {
+  // 1. 检查主题设置（非Supabase相关，页面样式逻辑）
+  if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+
+  // 2. 检查登录状态（通过Supabase Session）
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    // 登录状态：加载数据、设置同步监听、显示应用页面
+    currentUser = session.user.email === 'admin@example.com' ? 'admin' : 'user';
+    await loadCustomOptions(); // 加载产品系列/尺寸
+    await loadProducts(); // 加载产品数据
+    setupDataSync(); // 设置数据实时同步
+    showAppPage(); // 显示主页面
+  } else {
+    // 未登录：加载密码配置（用于本地登录验证）
+    await loadPasswords();
+  }
+};
         // 全局变量初始化
         let products = [];
         let customSeries = [];
@@ -1812,4 +1834,5 @@
     </script>
 </body>
 </html>
+
 
