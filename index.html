@@ -51,7 +51,7 @@
                 @apply bg-danger text-white px-4 py-2 rounded-lg hover:bg-danger/90 transition-all active:scale-95;
             }
             .input-field {
-                @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition                transition-all dark:bg-gray-700 dark:text-white outline-none;
+                @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition transition-all dark:bg-gray-700 dark:text-white outline-none;
             }
             .badge {
                 @apply px-2 py-1 rounded-full text-xs font-medium;
@@ -90,8 +90,8 @@
                     <input type="hidden" id="auth-type" value="user">
                     
                     <div class="mb-4.5">
-                        <label for="username" class="form-label">用户名</label>
-                        <input type="text" id="username" class="input-field" placeholder="请输入用户名" required>
+                        <label for="email" class="form-label">邮箱</label>
+                        <input type="email" id="email" class="input-field" placeholder="请输入邮箱" required>
                     </div>
                     
                     <div class="mb-6 relative">
@@ -103,7 +103,7 @@
                     </div>
                     
                     <div id="login-error" class="mb-4 text-danger text-sm hidden">
-                        <i class="fa fa-exclamation-circle mr-1"></i> 用户名或密码错误
+                        <i class="fa fa-exclamation-circle mr-1"></i> 邮箱或密码错误
                     </div>
                     
                     <button type="submit" class="btn-primary w-full">
@@ -113,6 +113,7 @@
 
                 <!-- 登录帮助信息 -->
                 <div class="mt-4 text-center text-xs text-secondary">
+                    <p>普通用户默认邮箱: user@example.com | 管理员默认邮箱: admin@example.com</p>
                 </div>
             </div>
         </div>
@@ -467,35 +468,21 @@
                 <h3 class="font-medium mb-3">密码修改</h3>
                 <div class="space-y-4 mb-6">
                     <div>
-                        <label for="user-password" class="form-label">普通用户密码</label>
+                        <label for="new-password" class="form-label">新密码</label>
                         <div class="relative">
-                            <input type="password" id="user-password" class="input-field pr-10" placeholder="输入新密码">
-                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors" onclick="togglePassword('user-password')">
+                            <input type="password" id="new-password" class="input-field pr-10" placeholder="输入新密码">
+                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors" onclick="togglePassword('new-password')">
                                 <i class="fa fa-eye-slash"></i>
                             </button>
                         </div>
                     </div>
                     <div>
-                        <label for="user-password-confirm" class="form-label">确认普通用户密码</label>
-                        <input type="password" id="user-password-confirm" class="input-field" placeholder="再次输入">
-                    </div>
-                    
-                    <div>
-                        <label for="admin-password" class="form-label">管理员密码</label>
-                        <div class="relative">
-                            <input type="password" id="admin-password" class="input-field pr-10" placeholder="输入新密码">
-                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors" onclick="togglePassword('admin-password')">
-                                <i class="fa fa-eye-slash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="admin-password-confirm" class="form-label">确认管理员密码</label>
-                        <input type="password" id="admin-password-confirm" class="input-field" placeholder="再次输入">
+                        <label for="new-password-confirm" class="form-label">确认新密码</label>
+                        <input type="password" id="new-password-confirm" class="input-field" placeholder="再次输入">
                     </div>
                 </div>
                 
-                <button class="btn-primary w-full mb-6" onclick="savePasswords()">保存密码修改</button>
+                <button class="btn-primary w-full mb-6" onclick="updatePassword()">更新密码</button>
                 
                 <h3 class="font-medium mb-3">数据管理</h3>
                 <div class="space-y-3">
@@ -568,7 +555,7 @@
                 </div>
                 <div id="admin-help" class="hidden">
                     <h3 class="font-medium text-primary">管理员功能</h3>
-                    <p class="text-sm mt-1">管理员可以添加自定义系列和尺寸，修改用户密码，导入导出数据，上传产品图片。</p>
+                    <p class="text-sm mt-1">管理员可以添加自定义系列和尺寸，修改密码，导入导出数据，上传产品图片。</p>
                 </div>
             </div>
         </div>
@@ -601,8 +588,7 @@
         let products = [];
         let customSeries = [];
         let customSizes = [];
-        let passwords = { user: '', admin: '' };
-        let currentUser = '';
+        let currentUser = ''; // 'user' 或 'admin'
         let dataSyncListener = null;
         let seriesChart = null;
         // 新增图片相关变量
@@ -611,8 +597,8 @@
         const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 图片最大限制：5MB
         
         // 初始化Supabase客户端 - 请替换为你的项目信息
-        const supabaseUrl = 'https://xntvwcweuqnqpgnmvbzq.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhudHZ3Y3dldXFucXBnbm12YnpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzODkyOTAsImV4cCI6MjA3Njk2NTI5MH0.W2_akOurOxlp1quO5uDFnc8MCTtBxrVaBhiHIxu041s';
+        const supabaseUrl = 'https://hwkrjjewspcrorlwtdfr.supabase.co'; // 替换为你的Supabase URL
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3a3JqamV3c3Bjcm9ybHd0ZGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NTIyODUsImV4cCI6MjA3NzMyODI4NX0.O8-Y3AKhorxiXEdYGkT0ISAJkEQhUYITKyGhF9U34_w'; // 替换为你的anon key
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // 页面加载完成后初始化
@@ -627,13 +613,15 @@
             // 检查登录状态
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
+                // 通过邮箱判断用户角色（admin@example.com为管理员）
                 currentUser = session.user.email === 'admin@example.com' ? 'admin' : 'user';
                 await loadCustomOptions();
                 await loadProducts();
                 setupDataSync();
                 showAppPage();
             } else {
-                await loadPasswords();
+                // 未登录，显示登录页
+                document.getElementById('login-page').classList.remove('hidden');
             }
         };
 
@@ -691,48 +679,34 @@
             renderCustomOptionsLists();
         }
 
-        // 加载密码配置
-        async function loadPasswords() {
-            const { data } = await supabase
-                .from('settings')
-                .select('key, value')
-                .in('key', ['user_password', 'admin_password']);
-            
-            if (data && data.length > 0) {
-                data.forEach(item => {
-                    if (item.key === 'user_password') {
-                        passwords.user = item.value;
-                    } else if (item.key === 'admin_password') {
-                        passwords.admin = item.value;
-                    }
-                });
-            }
-        }
-
-        // 设置数据同步监听
+        // 设置数据同步监听（使用唯一通道名避免冲突）
         function setupDataSync() {
+            // 生成唯一通道ID（基于当前会话ID）
+            const { data: { session } } = supabase.auth.getSession();
+            const channelId = `product-sync-${session?.session_id || Date.now()}`;
+            
             // 监听产品数据变化
             const productsSubscription = supabase
-                .channel('custom-filter-channel')
+                .channel(channelId)
                 .on(
                     'postgres_changes',
                     { event: '*', schema: 'public', table: 'products' },
                     (payload) => {
                         console.log('Product change detected:', payload);
-                        loadProducts(); // 重新加载产品数据
+                        loadProducts(); // 数据变化时重新加载产品列表
                     }
                 )
                 .subscribe();
             
             // 监听自定义选项变化
             const optionsSubscription = supabase
-                .channel('custom-options-channel')
+                .channel(channelId)
                 .on(
                     'postgres_changes',
                     { event: '*', schema: 'public', table: 'custom_options' },
                     (payload) => {
                         console.log('Custom option change detected:', payload);
-                        loadCustomOptions(); // 重新加载自定义选项
+                        loadCustomOptions(); // 数据变化时重新加载筛选选项
                     }
                 )
                 .subscribe();
@@ -741,23 +715,30 @@
             dataSyncListener = { productsSubscription, optionsSubscription };
         }
 
-        // 处理登录
+        // 处理登录（使用Supabase Auth）
         async function handleLogin(event) {
             event.preventDefault();
             
-            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const authType = document.getElementById('auth-type').value;
             
-            // 验证密码（实际应用中应使用Supabase的认证系统）
-            if ((authType === 'user' && password !== passwords.user) || 
-                (authType === 'admin' && password !== passwords.admin)) {
+            // 调用Supabase Auth登录接口
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+            
+            if (error) {
                 document.getElementById('login-error').classList.remove('hidden');
+                console.error('Login error:', error);
                 return;
             }
             
-            // 登录成功，更新用户角色
-            currentUser = authType;
+            // 登录成功，获取用户角色
+            const { data: { session } } = await supabase.auth.getSession();
+            currentUser = session.user.email === 'admin@example.com' ? 'admin' : 'user';
+            
+            // 加载数据并显示应用页面
             await loadCustomOptions();
             await loadProducts();
             setupDataSync();
@@ -765,14 +746,23 @@
             showToast('登录成功');
         }
 
-        // 处理登出
+        // 处理登出（使用Supabase Auth）
         async function handleLogout() {
+            // 调用Supabase登出接口
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                showToast('退出登录失败', 'error');
+                console.error('Logout error:', error);
+                return;
+            }
+            
             // 关闭数据同步监听
             if (dataSyncListener) {
                 await supabase.removeChannel(dataSyncListener.productsSubscription);
                 await supabase.removeChannel(dataSyncListener.optionsSubscription);
             }
             
+            // 切换到登录页
             document.getElementById('login-page').classList.remove('hidden');
             document.getElementById('app-page').classList.add('hidden');
             showToast('已成功退出登录');
@@ -1029,70 +1019,39 @@
             });
         }
 
-        // 保存密码修改
-        async function savePasswords() {
-            const userPassword = document.getElementById('user-password').value;
-            const userPasswordConfirm = document.getElementById('user-password-confirm').value;
-            const adminPassword = document.getElementById('admin-password').value;
-            const adminPasswordConfirm = document.getElementById('admin-password-confirm').value;
+        // 更新密码（使用Supabase Auth）
+        async function updatePassword() {
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('new-password-confirm').value;
             
-            // 验证用户密码
-            if (userPassword && userPassword !== userPasswordConfirm) {
-                showToast('普通用户密码不一致', 'error');
+            if (newPassword !== confirmPassword) {
+                showToast('两次输入的密码不一致', 'error');
                 return;
             }
             
-            // 验证管理员密码
-            if (adminPassword && adminPassword !== adminPasswordConfirm) {
-                showToast('管理员密码不一致', 'error');
+            if (newPassword.length < 6) {
+                showToast('密码长度不能少于6位', 'error');
                 return;
             }
             
-            // 保存密码
-            const updates = [];
+            // 调用Supabase Auth更新密码接口
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword
+            });
             
-            if (userPassword) {
-                updates.push({
-                    key: 'user_password',
-                    value: userPassword
-                });
+            if (error) {
+                showToast('密码更新失败', 'error');
+                console.error('Password update error:', error);
+                return;
             }
             
-            if (adminPassword) {
-                updates.push({
-                    key: 'admin_password',
-                    value: adminPassword
-                });
-            }
+            // 清空输入框
+            document.getElementById('new-password').value = '';
+            document.getElementById('new-password-confirm').value = '';
             
-            if (updates.length > 0) {
-                const { error } = await supabase
-                    .from('settings')
-                    .upsert(updates);
-                
-                if (error) {
-                    showToast('保存密码失败', 'error');
-                    console.error('Error saving passwords:', error);
-                    return;
-                }
-                
-                // 更新本地密码缓存
-                updates.forEach(update => {
-                    if (update.key === 'user_password') {
-                        passwords.user = update.value;
-                    } else if (update.key === 'admin_password') {
-                        passwords.admin = update.value;
-                    }
-                });
-                
-                // 清空输入框
-                document.getElementById('user-password').value = '';
-                document.getElementById('user-password-confirm').value = '';
-                document.getElementById('admin-password').value = '';
-                document.getElementById('admin-password-confirm').value = '';
-                
-                showToast('密码修改成功');
-            }
+            showToast('密码更新成功，请重新登录');
+            // 强制重新登录
+            setTimeout(handleLogout, 1500);
         }
 
         // 清除所有产品数据
@@ -1100,8 +1059,12 @@
             // 先删除所有图片
             for (const product of products) {
                 if (product.image) {
-                    const imagePath = product.image.split('/').slice(-2).join('/');
-                    await supabase.storage.from('product-images').remove([imagePath]);
+                    // 从URL提取存储路径（格式：https://xxx.supabase.co/storage/v1/object/public/product-images/xxx.png）
+                    const urlParts = product.image.split('/public/');
+                    if (urlParts.length > 1) {
+                        const imagePath = urlParts[1];
+                        await supabase.storage.from('product-images').remove([imagePath]);
+                    }
                 }
             }
             
@@ -1265,9 +1228,12 @@
             }
         }
 
-        // 切换认证类型
+        // 切换认证类型（仅UI展示，实际由邮箱决定）
         function switchAuth(type) {
             document.getElementById('auth-type').value = type;
+            // 自动填充对应邮箱
+            document.getElementById('email').value = type === 'user' ? 'user@example.com' : 'admin@example.com';
+            
             if (type === 'user') {
                 document.getElementById('user-tab').classList.add('bg-primary', 'text-white');
                 document.getElementById('user-tab').classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-600');
@@ -1408,8 +1374,11 @@
                         <button class="btn-danger px-3 py-1 text-sm" onclick="confirmAction('确定要删除该产品吗？', async () => {
                             // 删除产品图片
                             if (${JSON.stringify(product.image)}) {
-                                const imagePath = ${JSON.stringify(product.image)}.split('/').slice(-2).join('/');
-                                await supabase.storage.from('product-images').remove([imagePath]);
+                                const urlParts = ${JSON.stringify(product.image)}.split('/public/');
+                                if (urlParts.length > 1) {
+                                    const imagePath = urlParts[1];
+                                    await supabase.storage.from('product-images').remove([imagePath]);
+                                }
                             }
                             
                             // 删除产品数据
@@ -1743,17 +1712,20 @@
         async function deleteProductImage() {
             // 1. 删除Supabase中已上传的图片（编辑时）
             if (currentImageUrl) {
-                // 提取图片路径（从URL中截取，如"product-images/xxx.png"）
-                const imagePath = currentImageUrl.split('/').slice(-2).join('/');
-                const { error } = await supabase
-                    .storage
-                    .from('product-images')
-                    .remove([imagePath]);
-                
-                if (error) {
-                    showToast('删除图片失败', 'error');
-                    console.error('Delete image error:', error);
-                    return;
+                // 从URL提取存储路径
+                const urlParts = currentImageUrl.split('/public/');
+                if (urlParts.length > 1) {
+                    const imagePath = urlParts[1];
+                    const { error } = await supabase
+                        .storage
+                        .from('product-images')
+                        .remove([imagePath]);
+                    
+                    if (error) {
+                        showToast('删除图片失败', 'error');
+                        console.error('Delete image error:', error);
+                        return;
+                    }
                 }
                 currentImageUrl = ''; // 清空已存URL
             }
