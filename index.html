@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marco Polo速查</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
@@ -135,7 +135,8 @@
                         <i class="fa fa-sun-o hidden dark:inline-block"></i>
                     </button>
                     
-                    <button id="settings-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" onclick="openSettings()" style="display: none;">
+                    <!-- 修复：恢复设置按钮显示逻辑 -->
+                    <button id="settings-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" onclick="openSettings()" style="display: ${currentUser === 'admin' ? 'block' : 'none'}">
                         <i class="fa fa-cog"></i>
                     </button>
                     
@@ -195,7 +196,6 @@
                                 <i class="fa fa-chevron-down text-xs"></i>
                             </div>
                         </div>
-                        <!-- 修复3：默认隐藏添加系列输入框 -->
                         <div class="flex items-center mt-2" id="series-add-container" style="display: none;">
                             <input type="text" id="new-series" class="input-field text-sm w-full mr-2" placeholder="添加新系列">
                             <button class="btn-primary px-2 py-1 text-sm" onclick="addCustomOption('series')">
@@ -214,7 +214,6 @@
                                 <i class="fa fa-chevron-down text-xs"></i>
                             </div>
                         </div>
-                        <!-- 修复3：默认隐藏添加尺寸输入框 -->
                         <div class="flex items-center mt-2" id="size-add-container" style="display: none;">
                             <input type="text" id="new-size" class="input-field text-sm w-full mr-2" placeholder="添加新尺寸">
                             <button class="btn-primary px-2 py-1 text-sm" onclick="addCustomOption('size')">
@@ -402,25 +401,157 @@
         </div>
     </div>
 
-    <!-- 其他模态框结构保持不变 -->
+    <!-- 设置模态框 -->
     <div id="settings-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
-        <!-- 内容省略 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto transition-theme">
+            <div class="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+                <h2 class="text-lg font-bold">系统设置</h2>
+                <button class="text-gray-500 hover:text-danger transition-colors" onclick="document.getElementById('settings-modal').classList.add('hidden')">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <div class="mb-6">
+                    <h3 class="font-medium mb-3">自定义选项管理</h3>
+                    
+                    <div class="mb-5">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-medium">产品系列</h4>
+                            <button class="text-sm btn-primary px-3 py-1" onclick="openOptionEditModal('series')">
+                                <i class="fa fa-edit mr-1"></i> 编辑
+                            </button>
+                        </div>
+                        <div id="series-list-display" class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-medium">尺寸规格</h4>
+                            <button class="text-sm btn-primary px-3 py-1" onclick="openOptionEditModal('size')">
+                                <i class="fa fa-edit mr-1"></i> 编辑
+                            </button>
+                        </div>
+                        <div id="size-list-display" class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 class="font-medium mb-3">密码修改</h3>
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label for="new-password" class="form-label">新密码</label>
+                        <div class="relative">
+                            <input type="password" id="new-password" class="input-field pr-10" placeholder="输入新密码">
+                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors" onclick="togglePassword('new-password')">
+                                <i class="fa fa-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="new-password-confirm" class="form-label">确认新密码</label>
+                        <input type="password" id="new-password-confirm" class="input-field" placeholder="再次输入">
+                    </div>
+                </div>
+                
+                <button class="btn-primary w-full mb-6" onclick="updatePassword()">更新密码</button>
+                
+                <h3 class="font-medium mb-3">数据管理</h3>
+                <div class="space-y-3">
+                    <button class="btn-secondary w-full" onclick="importDemoData()">
+                        <i class="fa fa-file-text-o mr-1"></i> 导入演示数据
+                    </button>
+                    <button class="btn-danger w-full" onclick="confirmAction('确定要清除所有产品数据吗？此操作不可恢复！', clearAllData)">
+                        <i class="fa fa-trash mr-1"></i> 清除所有产品数据
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- 选项编辑模态框 -->
     <div id="option-edit-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
-        <!-- 内容省略 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md transition-theme">
+            <div class="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+                <h2 id="option-modal-title" class="text-lg font-bold">编辑产品系列</h2>
+                <button class="text-gray-500 hover:text-danger transition-colors" onclick="document.getElementById('option-edit-modal').classList.add('hidden')">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <input type="hidden" id="current-option-type" value="">
+                
+                <div class="mb-4">
+                    <label class="form-label">添加新选项</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-option-input" class="input-field" placeholder="输入新选项名称">
+                        <button id="add-option-btn" class="btn-primary" onclick="saveNewOption()">
+                            <i class="fa fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="form-label">现有选项</label>
+                    <div id="option-list" class="space-y-2 max-h-60 overflow-y-auto pr-2">
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end">
+                    <button class="btn-secondary" onclick="document.getElementById('option-edit-modal').classList.add('hidden')">
+                        关闭
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- 帮助模态框 -->
     <div id="help-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
-        <!-- 内容省略 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto transition-theme">
+            <div class="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+                <h2 class="text-lg font-bold">使用帮助</h2>
+                <button class="text-gray-500 hover:text-danger transition-colors" onclick="document.getElementById('help-modal').classList.add('hidden')">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4 space-y-4">
+                <div>
+                    <h3 class="font-medium text-primary">基本操作</h3>
+                    <p class="text-sm mt-1">登录系统后可以查看产品列表，管理员可以添加、编辑和删除产品。</p>
+                </div>
+                <div>
+                    <h3 class="font-medium text-primary">筛选产品</h3>
+                    <p class="text-sm mt-1">使用左侧筛选面板可以按系列、尺寸、价格和状态筛选产品。</p>
+                </div>
+                <div id="admin-help" class="hidden">
+                    <h3 class="font-medium text-primary">管理员功能</h3>
+                    <p class="text-sm mt-1">管理员可以添加自定义系列和尺寸，修改密码，导入导出数据，上传产品图片。</p>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- 确认框 -->
     <div id="confirm-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
-        <!-- 内容省略 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md transition-theme">
+            <div class="p-4 border-b dark:border-gray-700">
+                <h2 class="text-lg font-bold">确认操作</h2>
+            </div>
+            <div class="p-4">
+                <p id="confirm-message" class="mb-4">确认要执行此操作吗？</p>
+                <div class="flex justify-end gap-3">
+                    <button class="btn-secondary" onclick="closeConfirm()">取消</button>
+                    <button id="confirm-ok" class="btn-primary">确认</button>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- 提示框 -->
     <div id="toast" class="fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full hidden">
-        <!-- 内容省略 -->
+        <i id="toast-icon" class="fa fa-check-circle mr-2"></i>
+        <span id="toast-message"></span>
     </div>
 
     <script>
@@ -541,7 +672,7 @@
             }
         }
 
-        // 修复2：产品列表渲染函数（确保正确渲染）
+        // 产品列表渲染函数（保持不变）
         function renderProductList() {
             const container = document.getElementById('product-list');
             if (!container) return;
@@ -559,7 +690,6 @@
                 return;
             }
             
-            // 确保产品列表正确渲染
             container.innerHTML = filteredProducts.map(product => `
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 card-hover transition-theme">
                     <div class="w-full h-40 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-3">
@@ -627,7 +757,7 @@
         // 保存产品（保持不变）
         async function saveProduct(event) { /* 保持不变 */ }
 
-        // 修复1：图片上传函数（添加contentType参数）
+        // 图片上传函数（保持不变）
         async function uploadImageToSupabase(file) {
             if (!file) return null;
             if (file.size > MAX_IMAGE_SIZE) {
@@ -636,7 +766,6 @@
             }
             
             const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-            // 添加contentType参数，确保图片格式被正确识别
             const { error } = await supabase.storage
                 .from('product-images')
                 .upload(fileName, file, { contentType: file.type });
@@ -659,8 +788,12 @@
         function deleteProductImage() { /* 保持不变 */ }
         function closeProductModal() { /* 保持不变 */ }
 
+        // 修复：恢复设置按钮显示逻辑
+        function openSettings() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
         // 其他函数（保持不变）
-        function openSettings() { /* 保持不变 */ }
         function openHelp() { /* 保持不变 */ }
         function confirmAction(message, callback) { /* 保持不变 */ }
         function closeConfirm() { /* 保持不变 */ }
@@ -674,8 +807,8 @@
             
             if (currentUser === 'admin') {
                 document.getElementById('action-bar').style.display = 'flex';
+                // 修复：管理员显示设置按钮
                 document.getElementById('settings-btn').style.display = 'block';
-                // 管理员显示添加选项输入框（与修复3对应）
                 document.getElementById('series-add-container').style.display = 'flex';
                 document.getElementById('size-add-container').style.display = 'flex';
                 document.getElementById('empty-hint').classList.remove('hidden');
